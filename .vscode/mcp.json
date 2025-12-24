@@ -1,0 +1,16 @@
+{
+    "servers": {
+        "playwright-mcp-local": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@latest",
+                "--extension"
+            ],
+            "env": {
+                "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "OAHd-r44EssFbHv9pGPiY0fjAYTdrStU-x4tvTDUYzM"
+            }
+        }
+    },
+    "inputs": []
+}
