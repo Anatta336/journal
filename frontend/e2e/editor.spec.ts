@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Journal Editor', () => {
     test('user can type text into the editor and see it displayed', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await expect(editor).toBeVisible()
@@ -14,7 +14,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user types text, applies bold formatting, and underlying markdown contains **', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -28,7 +28,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user selects text and clicks Bold button, text appears bold', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -42,7 +42,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user selects text and clicks Italic button, text appears italic', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -56,7 +56,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user selects text and clicks Code button, text appears as inline code', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -70,7 +70,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user clicks Code Block button, can type preformatted text', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -84,7 +84,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user clicks Bullet List button, creates a list', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -101,7 +101,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('toolbar buttons show active state when cursor is in formatted content', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -115,7 +115,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('typing "* " at start of line triggers list mode', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -127,7 +127,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('pressing Enter in list item with content creates new item', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -142,7 +142,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('pressing Enter in empty list item exits list mode', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -158,7 +158,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('user creates multi-item list, exits by pressing Enter on empty item', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -180,7 +180,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('typing * displays * to user but stores as \\* in markdown', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -203,7 +203,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('typing * in inline code mode stores literal *', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -221,7 +221,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('typing * in code block stores literal *', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -234,7 +234,7 @@ test.describe('Journal Editor', () => {
     })
 
     test('clicking Bold button stores ** without escaping', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -250,7 +250,7 @@ test.describe('Journal Editor', () => {
 
 test.describe('Integration - Complete User Workflows', () => {
     test('writing a journal entry with mixed formatting', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -275,7 +275,7 @@ test.describe('Integration - Complete User Workflows', () => {
     })
 
     test('creating and editing bullet lists', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -297,7 +297,7 @@ test.describe('Integration - Complete User Workflows', () => {
     })
 
     test('using toolbar to format text preserves markdown structure', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -320,7 +320,7 @@ test.describe('Integration - Complete User Workflows', () => {
     })
 
     test('typing special characters displays them correctly', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
@@ -334,7 +334,7 @@ test.describe('Integration - Complete User Workflows', () => {
     })
 
     test('complete workflow with all formatting types', async ({ page }) => {
-        await page.goto('/')
+        await page.goto('/entries/new')
 
         const editor = page.getByTestId('editor-content')
         await editor.click()

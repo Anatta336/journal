@@ -6,7 +6,10 @@ import { v4 as uuidv4 } from "uuid";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..", "..");
-const DATA_DIR = path.join(PROJECT_ROOT, "data", "entries");
+
+const isTesting = process.env.TESTING === "true";
+const dataFolder = isTesting ? "data-test" : "data";
+const DATA_DIR = path.join(PROJECT_ROOT, dataFolder, "entries");
 const TRASH_DIR = path.join(DATA_DIR, ".trash");
 
 export interface EntryMetadata {

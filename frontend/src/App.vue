@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import JournalEditor from './components/JournalEditor.vue'
 </script>
 
 <template>
@@ -8,7 +7,7 @@ import JournalEditor from './components/JournalEditor.vue'
             <h1>Journal</h1>
         </header>
         <main class="app-main">
-            <JournalEditor />
+            <router-view />
         </main>
     </div>
 </template>

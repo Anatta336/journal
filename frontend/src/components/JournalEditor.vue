@@ -5,6 +5,10 @@ import { Markdown } from '@tiptap/markdown'
 import EditorToolbar from './EditorToolbar.vue'
 import { EscapedChar, MarkdownEscape } from '@/extensions/MarkdownEscape'
 
+const emit = defineEmits<{
+    update: []
+}>()
+
 const editor = useEditor({
     extensions: [
         StarterKit,
@@ -18,21 +22,14 @@ const editor = useEditor({
             'data-testid': 'editor-content',
         },
     },
+    onUpdate: () => {
+        emit('update')
+    },
 })
 
 function escapeMarkdownChars(text: string, hasEscapedMark: boolean): string {
     if (!hasEscapedMark) return text
     return text.replace(/([*_`#\[\]])/g, '\\$1')
-}
-
-function serializeNode(node: Record<string, unknown>): string {
-    if (node.type === 'text') {
-        const text = node.text as string
-        const marks = (node.marks as Array<{ type: string }>) || []
-        const hasEscapedMark = marks.some(m => m.type === 'escapedChar')
-        return escapeMarkdownChars(text, hasEscapedMark)
-    }
-    return ''
 }
 
 function getMarkdown(): string {

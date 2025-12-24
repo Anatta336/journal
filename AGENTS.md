@@ -21,8 +21,11 @@ This will be a journal app, used by a single user to manage journal entries in t
 
 - [Markdown Journal Entries](design/1766595203-markdown-journal-entries/plan.md)
 - [Storing Journal Entries](design/1766597348-storing-journal-entries/plan.md)
+- [Frontend Manage Entries](design/1766600291-frontend-manage-entries/plan.md)
 
 ## Development Guidelines
+
+Assume the dev servers for both frontend and backend are already running. Only start them yourself after you have confirmed they're not running and the relevant ports are free.
 
 ### Frontend
 
@@ -38,6 +41,8 @@ This will be a journal app, used by a single user to manage journal entries in t
 - **Unit Tests:** `npm run test --prefix backend` Runs Vitest tests for storage and API.
 
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
+
+When `TESTING=true` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation. E2E tests are configured to start the backend with this flag.
 
 When possible use the Playwright MCP server to access the site so you can interact with it and test your changes.
 
