@@ -14,14 +14,30 @@ This will be a journal app, used by a single user to manage journal entries in t
 
 - **Language:** TypeScript.
 - **Frontend:** Vue 3 using TypeScript. No external styling dependencies.
+- **Backend:** Fastify using TypeScript.
 - **Build:** Vite
+
+## Design Documents
+
+- [Markdown Journal Entries](design/1766595203-markdown-journal-entries/plan.md)
+- [Storing Journal Entries](design/1766597348-storing-journal-entries/plan.md)
 
 ## Development Guidelines
 
-- **Run Dev:** `npm run dev --prefix frontend` Starts Vite server with site available at <http://localhost:5173/> this may already be running.
+### Frontend
+
+- **Run Dev:** `npm run dev --prefix frontend` Starts Vite server with site available at <http://localhost:5173/>
 - **Build:** `npm run build --prefix frontend` Compiles to `dist/`
 - **Unit Tests:** `npm run test:unit --prefix frontend` Runs Vitest unit tests.
 - **E2E Tests:** `npm run test:e2e --prefix frontend` Runs Playwright end-to-end tests.
+
+### Backend
+
+- **Run Dev:** `npm run dev --prefix backend` Starts Fastify server at <http://localhost:3013/>
+- **Build:** `npm run build --prefix backend` Compiles TypeScript to `dist/`
+- **Unit Tests:** `npm run test --prefix backend` Runs Vitest tests for storage and API.
+
+The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
 When possible use the Playwright MCP server to access the site so you can interact with it and test your changes.
 
@@ -48,3 +64,7 @@ Make use of components to separate out functionality and keep things as clear as
 Always use the `<script setup>` syntax for Vue components with the composition API.
 
 Always used `<style scoped>`.
+
+### Manual testing
+
+Prefer to use Playwright MCP when you can. When using `curl` include `-m 5` to prevent indefinitely waiting for a response.

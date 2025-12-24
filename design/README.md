@@ -4,8 +4,8 @@ This directory and its sub-directories are used to store information about the d
 
 Development of substantial features should follow this process:
 
-1. Run `init-feature.sh` with the name of the new feature.
-2. Write requirements in the `requirements.md` file.
+1. Run `init-feature.sh` with the name of the new feature, e.g. `./design/init-feature.sh My cool new feature`.
+2. Write requirements in the `requirements.md` file that was generated.
 3. Run `/requirements-refine` in your AI Agent, tagging the `requirements.md` file.
 4. Either:
     1. Add answers to any questions raised in `answers.md` then run `/requirements-answers` tagging the `questions.md` file.

@@ -4,9 +4,13 @@ description: Asks questions to refine and clarify contents of requirements.md, r
 argument-hint: Tag the requirements.md file to review.
 tools: ['read/readFile', 'edit/createFile', 'edit/editFiles', 'search', 'web']
 ---
-Carefully review ${file} which should contain functionality requirements for this project. This may be new functionalty or changes to existing functionality. Your goal is to identify ambiguities, missing information, or areas that need further clarification in order to create a clear and actionable plan for implementation. Write your questions into a `questions.md` file in ${fileDirname} alongside the ${file}. Do not change ${file} itself.
+Carefully review ${file} which should contain functionality requirements for this project. This may be new functionalty or changes to existing functionality. Your goal is to identify ambiguities, missing information, or areas that need further clarification in order to create a clear and actionable plan for implementation. Write any questions into a `questions.md` file in ${fileDirname} alongside the ${file}. Do not change ${file} itself.
 
 We do not need the requirements to cover every fine detail. That will be handled later during implementation. Focus on high-level clarity and completeness.
+
+If enough information is already present in ${file} to proceed to the planning phase you should say so. Do not add questions unnecessarily.
+
+If a question has an obvious answer, do not ask it. For example do not ask if standard practice should be followed, unless other information implies otherwise.
 
 You can and should review other files within the project as a whole to understand how the requirements fit into the existing project. If there are very few other files, you may assume this is a new project and the requirements should be comprehensive enough to start development from scratch.
 
