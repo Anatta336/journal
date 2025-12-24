@@ -6,6 +6,8 @@ Always keep this `AGENTS.md` file up to date with changes. This file should only
 
 When you make any change to the project you should finish by reviewing `AGENTS.md` and referenced files. Make any changes needed to keep them up to date and accurate.
 
+Use the edit file tool to make changes, rather than terminal commands.
+
 ## Project Overview
 
 This will be a journal app, used by a single user to manage journal entries in the form of Markdown.

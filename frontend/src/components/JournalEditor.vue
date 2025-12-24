@@ -12,7 +12,9 @@ const emit = defineEmits<{
 const editor = useEditor({
     extensions: [
         StarterKit,
-        Markdown,
+        Markdown.configure({
+            html: false,
+        }),
         EscapedChar,
         MarkdownEscape,
     ],
@@ -27,9 +29,11 @@ const editor = useEditor({
     },
 })
 
+const ESCAPED_CHARS_LIST = '*_`#[]~>!-+\\(){}.|=^'
+
 function escapeMarkdownChars(text: string, hasEscapedMark: boolean): string {
     if (!hasEscapedMark) return text
-    return text.replace(/([*_`#\[\]])/g, '\\$1')
+    return text.replace(/([*_`#\[\]~>!\-+\\(){}.|=^])/g, '\\$1')
 }
 
 function getMarkdown(): string {
@@ -69,7 +73,71 @@ function setMarkdown(content: string): void {
         editor.value.commands.setContent(content)
         return
     }
-    const parsed = manager.parse(content)
+
+    // Replace escaped characters with a placeholder that won't be stripped
+    const charMap: Record<string, string> = {}
+    const reverseMap: Record<string, string> = {}
+
+    for (let i = 0; i < ESCAPED_CHARS_LIST.length; i++) {
+        const char = ESCAPED_CHARS_LIST[i]
+        const placeholder = String.fromCharCode(0xE000 + i)
+        charMap[char] = placeholder
+        reverseMap[placeholder] = char
+    }
+
+    const escapedContent = content.replace(/\\([*_`#\[\]~>!\-+\\(){}.|=^])/g, (match, char) => {
+        return charMap[char] || match
+    })
+    const parsed = manager.parse(escapedContent)
+
+    const placeholderRegex = new RegExp(`[${Object.values(charMap).join('')}]`, 'g')
+
+    const processContent = (nodes: any[]): any[] => {
+        const newNodes: any[] = []
+        for (const node of nodes) {
+            if (node.type === 'text') {
+                const text = node.text as string
+                let lastIndex = 0
+                let match
+
+                placeholderRegex.lastIndex = 0
+                while ((match = placeholderRegex.exec(text)) !== null) {
+                    if (match.index > lastIndex) {
+                        newNodes.push({
+                            type: 'text',
+                            text: text.slice(lastIndex, match.index),
+                            marks: node.marks
+                        })
+                    }
+                    newNodes.push({
+                        type: 'text',
+                        text: reverseMap[match[0]],
+                        marks: [...(node.marks || []), { type: 'escapedChar' }]
+                    })
+                    lastIndex = placeholderRegex.lastIndex
+                }
+
+                if (lastIndex < text.length) {
+                    newNodes.push({
+                        type: 'text',
+                        text: text.slice(lastIndex),
+                        marks: node.marks
+                    })
+                }
+            } else {
+                if (node.content && Array.isArray(node.content)) {
+                    node.content = processContent(node.content)
+                }
+                newNodes.push(node)
+            }
+        }
+        return newNodes
+    }
+
+    if (parsed.content) {
+        parsed.content = processContent(parsed.content)
+    }
+
     editor.value.commands.setContent(parsed)
 }
 

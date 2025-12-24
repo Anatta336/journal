@@ -46,4 +46,21 @@ describe('JournalEditor', () => {
         const markdown = component.getMarkdown()
         expect(markdown).toContain('**bold**')
     })
+
+    it('escapes special characters correctly', async () => {
+        const wrapper = mount(JournalEditor)
+        await wrapper.vm.$nextTick()
+        await wrapper.vm.$nextTick()
+
+        const component = wrapper.vm as unknown as {
+            setMarkdown: (content: string) => void;
+            getMarkdown: () => string;
+        }
+
+        // Test asterisk
+        component.setMarkdown('\\*asterisk\\*')
+        await wrapper.vm.$nextTick()
+        let markdown = component.getMarkdown()
+        expect(markdown).toBe('\\*asterisk\\*')
+    })
 })

@@ -1,7 +1,7 @@
 import { Extension, Mark } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
-const MARKDOWN_SPECIAL_CHARS = ['*', '_', '`', '#', '[', ']']
+const MARKDOWN_SPECIAL_CHARS = ['*', '_', '`', '#', '[', ']', '~', '>', '!', '-', '+', '\\', '(', ')', '{', '}', '.', '|', '=', '^']
 
 export const MarkdownEscapePluginKey = new PluginKey('markdownEscape')
 
