@@ -13,7 +13,9 @@ NAME="$*"
 # 1. Replace spaces with -
 # 2. Make it lowercase
 # 3. Remove anything that's not a letter a-z, number 0-9, or hyphen
-DIR_NAME=$(echo "$NAME" | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+KEBAB_NAME=$(echo "$NAME" | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+TIMESTAMP=$(date +%s)
+DIR_NAME="${TIMESTAMP}-${KEBAB_NAME}"
 
 # Get the directory where the script is located
 SCRIPT_DIR=$(dirname "$0")

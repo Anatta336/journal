@@ -18,12 +18,18 @@ This will be a journal app, used by a single user to manage journal entries in t
 
 ## Development Guidelines
 
-- **Run Dev:** `npm run dev` Starts Vite server with site available at <http://localhost:5173/> this may already be running.
-- **Build:** `npm run build` Compiles to `dist/`
+- **Run Dev:** `npm run dev --prefix frontend` Starts Vite server with site available at <http://localhost:5173/> this may already be running.
+- **Build:** `npm run build --prefix frontend` Compiles to `dist/`
+- **Unit Tests:** `npm run test:unit --prefix frontend` Runs Vitest unit tests.
+- **E2E Tests:** `npm run test:e2e --prefix frontend` Runs Playwright end-to-end tests.
 
 When possible use the Playwright MCP server to access the site so you can interact with it and test your changes.
 
 Only use comments if they add meaningful information - if a comment repeats what is already apparent from the code itself, remove the comment. Make the code's meaning clear by using descriptive function and variable names.
+
+### Code style
+
+Use 4 spaces for indenting in all types of file. Update the indentation of any existing code that doesn't match this.
 
 ### Styling
 

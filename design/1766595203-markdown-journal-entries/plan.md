@@ -4,15 +4,10 @@ This plan outlines the implementation of a Vue 3 TypeScript WYSIWYG markdown edi
 
 ## 1. Project Infrastructure Setup
 
-Establish the development environment with Docker and Vite.
+Establish the development environment with Vite.
 
 ### Tasks
 
-- Create `docker-compose.yml` at project root defining a Node 24 LTS service
-- Mount the project directory into the container for live development
-- Expose appropriate ports for Vite dev server (default 5173)
-- Only expose ports that are needed for normal development.
-- Allow customising the ports used via `.env` file in the project.
 - Initialize a Vite + Vue 3 + TypeScript project in a `frontend/` directory
 - Configure Vitest for unit testing
 - Configure Playwright for end-to-end testing
@@ -20,7 +15,6 @@ Establish the development environment with Docker and Vite.
 
 ### Evidence of Completion
 
-- Running `docker-compose up` starts the Vite dev server accessible at `http://localhost:5173`
 - `npm run test:unit` executes Vitest and passes with a placeholder test
 - `npm run test:e2e` executes Playwright and passes with a placeholder test
 
@@ -193,18 +187,12 @@ Create comprehensive integration tests to verify all requirements work together.
 - **Playwright**: E2E testing
 - **@vue/test-utils**: Vue component testing
 
-### Docker
-
-- Node 24 LTS base image
-
 ---
 
 ## File Structure
 
 ```
 journal/
-├── docker-compose.yml
-├── Dockerfile
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.ts
