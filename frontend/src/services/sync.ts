@@ -8,7 +8,7 @@ import {
 } from './db'
 import { calculateEntryHash, calculateGlobalHash } from '@/utils/hash'
 
-const API_BASE = 'http://localhost:3013'
+const API_BASE = '/api'
 
 interface ManifestEntry {
     id: string

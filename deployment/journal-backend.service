@@ -1,0 +1,14 @@
+[Unit]
+Description=Journal Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/journal/backend
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

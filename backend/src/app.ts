@@ -10,7 +10,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     });
 
     await fastify.register(cors, {
-        origin: "http://localhost:5173",
+        origin: ["http://localhost:5173", "https://notes.samdriver.xyz"],
     });
 
     fastify.get("/health", async () => {

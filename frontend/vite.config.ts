@@ -17,7 +17,7 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
                 runtimeCaching: [
                     {
-                        urlPattern: /^https?:\/\/localhost:3013\/.*/,
+                        urlPattern: /\/api\/.*/,
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'api-cache',
@@ -38,6 +38,13 @@ export default defineConfig({
     },
     server: {
         host: true,
-        port: 5173
+        port: 5173,
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3013',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
+            }
+        }
     }
 })
