@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import fs from "fs/promises";
+import path from "path";
 import { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
 import {
@@ -11,7 +12,20 @@ import {
 
 async function cleanupTestDirectories() {
     try {
-        await fs.rm(DATA_DIR, { recursive: true, force: true });
+        const entries = await fs.readdir(DATA_DIR, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name === ".gitignore") continue;
+            const fullPath = path.join(DATA_DIR, entry.name);
+            if (entry.isDirectory() && entry.name === ".trash") {
+                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                for (const trashEntry of trashEntries) {
+                    if (trashEntry.name === ".gitignore") continue;
+                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                }
+            } else {
+                await fs.rm(fullPath, { recursive: true, force: true });
+            }
+        }
     } catch {
         // Ignore if doesn't exist
     }

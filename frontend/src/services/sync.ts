@@ -22,6 +22,7 @@ interface ServerEntry {
     creationDate: string
     lastUpdated: string
     hash?: string
+    tags?: string[]
 }
 
 let isSyncing = false
@@ -177,6 +178,7 @@ export async function sync(): Promise<boolean> {
                     creationDate: e.creationDate,
                     lastUpdated: e.lastUpdated,
                     hash: e.hash,
+                    tags: e.tags,
                 }))
                 await batchUpdate(updates, entriesToDelete)
 
@@ -198,6 +200,7 @@ export async function sync(): Promise<boolean> {
                         creationDate: serverEntry.creationDate,
                         lastUpdated: serverEntry.lastUpdated,
                         hash: serverEntry.hash,
+                        tags: serverEntry.tags,
                         trashed: false,
                         syncStatus: 'synced',
                     }
@@ -253,7 +256,7 @@ export async function registerBackgroundSync(): Promise<void> {
     }
 }
 
-export async function createEntry(content: string): Promise<LocalEntry> {
+export async function createEntry(content: string, tags?: string[]): Promise<LocalEntry> {
     const id = crypto.randomUUID()
     const now = new Date().toISOString()
     const hash = await calculateEntryHash(content)
@@ -264,6 +267,7 @@ export async function createEntry(content: string): Promise<LocalEntry> {
         creationDate: now,
         lastUpdated: now,
         hash,
+        tags,
         trashed: false,
         syncStatus: 'pending',
     }
@@ -279,7 +283,7 @@ export async function createEntry(content: string): Promise<LocalEntry> {
     return entry
 }
 
-export async function updateEntry(id: string, content: string): Promise<LocalEntry | null> {
+export async function updateEntry(id: string, content: string, tags?: string[]): Promise<LocalEntry | null> {
     const existing = await getLocalEntry(id)
     if (!existing || existing.trashed) return null
 
@@ -291,6 +295,7 @@ export async function updateEntry(id: string, content: string): Promise<LocalEnt
         content,
         lastUpdated: now,
         hash,
+        tags,
         syncStatus: 'pending',
     }
 

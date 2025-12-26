@@ -8,7 +8,7 @@ import { createHash } from "crypto";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..", "..");
 
-const isTesting = process.env.TESTING === "true";
+const isTesting = process.env.TESTING === "true" || process.env.NODE_ENV === "test";
 const dataFolder = isTesting ? "data-test" : "data";
 const DATA_DIR = path.join(PROJECT_ROOT, dataFolder, "entries");
 const TRASH_DIR = path.join(DATA_DIR, ".trash");
@@ -22,6 +22,7 @@ export interface EntryMetadata {
     creationDate: string;
     lastUpdated: string;
     hash?: string;
+    tags?: string[];
 }
 
 export interface Entry extends EntryMetadata {
@@ -70,6 +71,7 @@ export async function getAllEntries(): Promise<EntryPreview[]> {
                     creationDate: entry.creationDate,
                     lastUpdated: entry.lastUpdated,
                     hash: entry.hash,
+                    tags: entry.tags,
                     preview: entry.content.slice(0, 30),
                 });
             }
@@ -109,12 +111,14 @@ export async function getEntry(id: string): Promise<Entry | null> {
 
         const lastUpdated = (data.lastUpdated as string) || creationDate;
         const hash = data.hash as string | undefined;
+        const tags = Array.isArray(data.tags) ? (data.tags as string[]) : undefined;
 
         return {
             id,
             creationDate,
             lastUpdated,
             hash,
+            tags,
             content: parsed.content.trim(),
         };
     } catch {
@@ -127,38 +131,43 @@ async function saveEntryToFile(
     content: string,
     creationDate: string,
     lastUpdated: string,
-    hash?: string
+    hash?: string,
+    tags?: string[]
 ): Promise<void> {
     const filePath = getEntryPath(id);
-    const frontmatter: Record<string, string> = {
+    const frontmatter: Record<string, string | string[]> = {
         creationDate,
         lastUpdated,
     };
     if (hash) {
         frontmatter.hash = hash;
     }
+    if (tags && tags.length > 0) {
+        frontmatter.tags = tags;
+    }
 
     const fileContent = matter.stringify(content, frontmatter);
     await fs.writeFile(filePath, fileContent, "utf-8");
 }
 
-export async function createEntry(content: string): Promise<Entry> {
+export async function createEntry(content: string, tags?: string[]): Promise<Entry> {
     const id = uuidv4();
     const now = new Date().toISOString();
     const hash = calculateEntryHash(content);
 
-    await saveEntryToFile(id, content, now, now, hash);
+    await saveEntryToFile(id, content, now, now, hash, tags);
 
     return {
         id,
         creationDate: now,
         lastUpdated: now,
         hash,
+        tags,
         content,
     };
 }
 
-export async function updateEntry(id: string, content: string): Promise<Entry | null> {
+export async function updateEntry(id: string, content: string, tags?: string[]): Promise<Entry | null> {
     const existing = await getEntry(id);
     if (!existing) {
         return null;
@@ -166,13 +175,14 @@ export async function updateEntry(id: string, content: string): Promise<Entry | 
 
     const now = new Date().toISOString();
     const hash = calculateEntryHash(content);
-    await saveEntryToFile(id, content, existing.creationDate, now, hash);
+    await saveEntryToFile(id, content, existing.creationDate, now, hash, tags);
 
     return {
         id,
         creationDate: existing.creationDate,
         lastUpdated: now,
         hash,
+        tags,
         content,
     };
 }
@@ -244,7 +254,8 @@ export async function saveEntry(entry: Entry): Promise<Entry> {
         entry.content,
         entry.creationDate,
         entry.lastUpdated,
-        entry.hash
+        entry.hash,
+        entry.tags
     );
     return entry;
 }

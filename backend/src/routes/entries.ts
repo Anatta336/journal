@@ -8,8 +8,14 @@ import {
     deleteEntry,
 } from "../services/storage.js";
 
+const tagSchema = z.string()
+    .min(1)
+    .max(20)
+    .regex(/^[a-zA-Z0-9-]+$/, "Tags must contain only alphanumeric characters and hyphens");
+
 const entryContentSchema = z.object({
     content: z.string().min(1, "Content is required"),
+    tags: z.array(tagSchema).optional(),
 });
 
 const idParamsSchema = z.object({
@@ -31,7 +37,7 @@ export const entriesRoutes: FastifyPluginAsync = async (fastify) => {
             });
         }
 
-        const entry = await createEntry(parseResult.data.content);
+        const entry = await createEntry(parseResult.data.content, parseResult.data.tags);
         return reply.status(201).send(entry);
     });
 
@@ -69,7 +75,7 @@ export const entriesRoutes: FastifyPluginAsync = async (fastify) => {
             });
         }
 
-        const entry = await updateEntry(paramsResult.data.id, bodyResult.data.content);
+        const entry = await updateEntry(paramsResult.data.id, bodyResult.data.content, bodyResult.data.tags);
         if (!entry) {
             return reply.status(404).send({ error: "Entry not found" });
         }

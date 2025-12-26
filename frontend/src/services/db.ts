@@ -8,6 +8,7 @@ export interface LocalEntry {
     creationDate: string
     lastUpdated: string
     hash?: string
+    tags?: string[]
     trashed: boolean
     syncStatus: SyncStatus
 }

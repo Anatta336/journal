@@ -47,6 +47,9 @@ const { isOnline, isSyncing } = useJournalInit()
     --color-select-bg: #344e76;
     --color-success: #10b981;
     --color-warning: #f59e0b;
+    --color-danger: #d1584b;
+    --color-danger-hover: #ba4b3e;
+
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;

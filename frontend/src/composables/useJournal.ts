@@ -22,6 +22,7 @@ export interface EntryPreview {
     lastUpdated: string
     preview: string
     syncStatus: string
+    tags?: string[]
 }
 
 const entries = ref<LocalEntry[]>([])
@@ -51,14 +52,14 @@ export function useJournal() {
         return getLocalEntry(id)
     }
 
-    async function saveNewEntry(content: string): Promise<LocalEntry> {
-        const entry = await createEntry(content)
+    async function saveNewEntry(content: string, tags?: string[]): Promise<LocalEntry> {
+        const entry = await createEntry(content, tags)
         await refreshEntries()
         return entry
     }
 
-    async function saveExistingEntry(id: string, content: string): Promise<LocalEntry | null> {
-        const updated = await updateEntry(id, content)
+    async function saveExistingEntry(id: string, content: string, tags?: string[]): Promise<LocalEntry | null> {
+        const updated = await updateEntry(id, content, tags)
         if (updated) {
             await refreshEntries()
         }
@@ -85,6 +86,7 @@ export function useJournal() {
             lastUpdated: e.lastUpdated,
             preview: e.content.slice(0, 30),
             syncStatus: e.syncStatus,
+            tags: e.tags,
         }))
     })
 

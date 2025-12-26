@@ -25,6 +25,7 @@ This will be a journal app, used by a single user to manage journal entries in t
 - [Storing Journal Entries](design/1766597348-storing-journal-entries/plan.md)
 - [Frontend Manage Entries](design/1766600291-frontend-manage-entries/plan.md)
 - [Progressive Web Application](design/1766740185-progressive-web-application/requirements.md)
+- [Tags](design/1766781056-tags/plan.md)
 
 ## Development Guidelines
 
@@ -45,7 +46,7 @@ Assume the dev servers for both frontend and backend are already running. Only s
 
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
-When `TESTING=true` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation. E2E tests are configured to start the backend with this flag.
+When `TESTING=true` or `NODE_ENV=test` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation. E2E tests are configured to start the backend with the `TESTING=true` flag.
 
 ### PWA and Sync
 

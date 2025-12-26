@@ -19,7 +19,20 @@ import {
 
 async function cleanupTestDirectories() {
     try {
-        await fs.rm(DATA_DIR, { recursive: true, force: true });
+        const entries = await fs.readdir(DATA_DIR, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name === ".gitignore") continue;
+            const fullPath = path.join(DATA_DIR, entry.name);
+            if (entry.isDirectory() && entry.name === ".trash") {
+                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                for (const trashEntry of trashEntries) {
+                    if (trashEntry.name === ".gitignore") continue;
+                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                }
+            } else {
+                await fs.rm(fullPath, { recursive: true, force: true });
+            }
+        }
     } catch {
         // Ignore if doesn't exist
     }
@@ -353,6 +366,70 @@ Content without creation date`;
             const hash2 = await calculateGlobalHash();
 
             expect(hash1).not.toBe(hash2);
+        });
+    });
+
+    describe("Tags", () => {
+        it("should create entry with tags", async () => {
+            const entry = await createEntry("Entry with tags", ["work", "important"]);
+
+            expect(entry.tags).toEqual(["work", "important"]);
+
+            const fetched = await getEntry(entry.id);
+            expect(fetched!.tags).toEqual(["work", "important"]);
+        });
+
+        it("should create entry without tags", async () => {
+            const entry = await createEntry("Entry without tags");
+
+            expect(entry.tags).toBeUndefined();
+
+            const fetched = await getEntry(entry.id);
+            expect(fetched!.tags).toBeUndefined();
+        });
+
+        it("should update entry with tags", async () => {
+            const original = await createEntry("Original content");
+            const updated = await updateEntry(original.id, "Updated content", ["new-tag"]);
+
+            expect(updated!.tags).toEqual(["new-tag"]);
+
+            const fetched = await getEntry(original.id);
+            expect(fetched!.tags).toEqual(["new-tag"]);
+        });
+
+        it("should include tags in getAllEntries", async () => {
+            await createEntry("Entry with tags", ["work", "journal"]);
+
+            const entries = await getAllEntries();
+
+            expect(entries[0].tags).toEqual(["work", "journal"]);
+        });
+
+        it("should save entry with tags via saveEntry", async () => {
+            const entry = {
+                id: "test-save-entry-tags",
+                content: "Content",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "test-hash",
+                tags: ["tag1", "tag2"],
+            };
+
+            await saveEntry(entry);
+
+            const fetched = await getEntry(entry.id);
+            expect(fetched!.tags).toEqual(["tag1", "tag2"]);
+        });
+
+        it("should store tags as YAML array in file", async () => {
+            const entry = await createEntry("Content", ["work", "personal"]);
+
+            const filePath = path.join(DATA_DIR, `${entry.id}.md`);
+            const fileContent = await fs.readFile(filePath, "utf-8");
+            const parsed = matter(fileContent);
+
+            expect(parsed.data.tags).toEqual(["work", "personal"]);
         });
     });
 });

@@ -1,12 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import fs from "fs/promises";
+import path from "path";
 import { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
 import { ensureStorageDirectories, DATA_DIR, TRASH_DIR } from "../services/storage.js";
 
 async function cleanupTestDirectories() {
     try {
-        await fs.rm(DATA_DIR, { recursive: true, force: true });
+        const entries = await fs.readdir(DATA_DIR, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name === ".gitignore") continue;
+            const fullPath = path.join(DATA_DIR, entry.name);
+            if (entry.isDirectory() && entry.name === ".trash") {
+                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                for (const trashEntry of trashEntries) {
+                    if (trashEntry.name === ".gitignore") continue;
+                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                }
+            } else {
+                await fs.rm(fullPath, { recursive: true, force: true });
+            }
+        }
     } catch {
         // Ignore if doesn't exist
     }
@@ -268,6 +282,88 @@ describe("Entries API", () => {
             });
 
             expect(response.statusCode).toBe(400);
+        });
+    });
+
+    describe("Tags", () => {
+        it("should create entry with tags", async () => {
+            const response = await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Entry with tags", tags: ["work", "important"] },
+            });
+
+            expect(response.statusCode).toBe(201);
+            const entry = response.json();
+            expect(entry.tags).toEqual(["work", "important"]);
+        });
+
+        it("should update entry with tags", async () => {
+            const createResponse = await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Original content" },
+            });
+            const created = createResponse.json();
+
+            const response = await app.inject({
+                method: "PUT",
+                url: `/entries/${created.id}`,
+                payload: { content: "Updated content", tags: ["new-tag"] },
+            });
+
+            expect(response.statusCode).toBe(200);
+            const updated = response.json();
+            expect(updated.tags).toEqual(["new-tag"]);
+        });
+
+        it("should return tags in entry list", async () => {
+            await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Entry with tags", tags: ["work", "journal"] },
+            });
+
+            const response = await app.inject({
+                method: "GET",
+                url: "/entries",
+            });
+
+            expect(response.statusCode).toBe(200);
+            const entries = response.json();
+            expect(entries[0].tags).toEqual(["work", "journal"]);
+        });
+
+        it("should reject tags with invalid characters", async () => {
+            const response = await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Content", tags: ["invalid tag!"] },
+            });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it("should reject tags longer than 20 characters", async () => {
+            const response = await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Content", tags: ["this-tag-is-way-too-long-for-us"] },
+            });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it("should accept valid tag with alphanumeric and hyphens", async () => {
+            const response = await app.inject({
+                method: "POST",
+                url: "/entries",
+                payload: { content: "Content", tags: ["valid-Tag-123"] },
+            });
+
+            expect(response.statusCode).toBe(201);
+            const entry = response.json();
+            expect(entry.tags).toEqual(["valid-Tag-123"]);
         });
     });
 });
