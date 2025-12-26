@@ -8,33 +8,11 @@ export default defineConfig({
         vue(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.svg', 'apple-touch-icon.svg'],
-            manifest: {
-                name: 'Journal',
-                short_name: 'Journal',
-                description: 'A personal journal application',
-                theme_color: '#4a5568',
-                background_color: '#ffffff',
-                display: 'standalone',
-                icons: [
-                    {
-                        src: 'pwa-192x192.svg',
-                        sizes: '192x192',
-                        type: 'image/svg+xml'
-                    },
-                    {
-                        src: 'pwa-512x512.svg',
-                        sizes: '512x512',
-                        type: 'image/svg+xml'
-                    },
-                    {
-                        src: 'pwa-512x512.svg',
-                        sizes: '512x512',
-                        type: 'image/svg+xml',
-                        purpose: 'maskable'
-                    }
-                ]
+            devOptions: {
+                enabled: true
             },
+            includeAssets: ['favicon.svg', 'apple-touch-icon.svg', 'manifest.json'],
+            manifest: false,
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
                 runtimeCaching: [
