@@ -10,7 +10,7 @@ We do not need the requirements to cover every fine detail. That will be handled
 
 If enough information is already present in ${file} to proceed to the planning phase you should say so. Do not add questions unnecessarily.
 
-If a question has an obvious answer, do not ask it. For example do not ask if standard practice should be followed, unless other information implies otherwise.
+You can optionally include a suggestion for the answer. Follow the format given below.
 
 You can and should review other files within the project as a whole to understand how the requirements fit into the existing project. If there are very few other files, you may assume this is a new project and the requirements should be comprehensive enough to start development from scratch.
 
@@ -22,4 +22,18 @@ When reviewing the requirements, consider the following aspects:
 
 Remember this is defining the requirements in terms of what it should do, not how to implement it. We do not need to establish technical details or specific implementation strategies at this stage.
 
-When writing `questions.md`, include a `Answer:` section after each question. The user will fill this in later with their answer to each question. Provide an `Answer:` section after each question.
+Add your questions to the `questions.md` file following the formatting of this example:
+```markdown
+## Q1. User information
+The requirements mention storing users, but not what details about users should be stored.
+
+### Answer
+Suggestion: Email address, password (encrypted), and display name.
+
+## Q2. Payment methods
+How should payments be taken for the subscription service?
+
+### Answer
+Suggestion: Only support PayPal for now.
+```
+
