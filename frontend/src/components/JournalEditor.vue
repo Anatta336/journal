@@ -12,9 +12,7 @@ const emit = defineEmits<{
 const editor = useEditor({
     extensions: [
         StarterKit,
-        Markdown.configure({
-            html: false,
-        }),
+        Markdown,
         EscapedChar,
         MarkdownEscape,
     ],

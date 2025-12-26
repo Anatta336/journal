@@ -89,6 +89,8 @@ test.describe('Journal Editor', () => {
         const editor = page.getByTestId('editor-content')
         await editor.click()
         await page.getByTestId('toolbar-bullet-list').click()
+        // Small delay to ensure list mode is active before typing
+        await page.waitForTimeout(100)
 
         await page.keyboard.type('First item')
         await page.keyboard.press('Enter')

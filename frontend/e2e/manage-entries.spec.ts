@@ -28,11 +28,54 @@ async function deleteAllEntries(): Promise<void> {
     }
 }
 
+async function waitForSync(page: import('@playwright/test').Page, expectedCount: number): Promise<void> {
+    // Just reload to force a fresh sync from the backend
+    await page.reload()
+    // Wait for sync to complete
+    await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+
+    if (expectedCount === 0) {
+        await page.getByText('No journal entries yet').waitFor({ state: 'visible', timeout: 10000 })
+    } else {
+        await page.getByTestId('entries-list').locator('li').first().waitFor({ state: 'visible', timeout: 10000 })
+    }
+}
+
 test.describe.configure({ mode: 'serial' })
 
+async function clearIndexedDB(page: import('@playwright/test').Page): Promise<void> {
+    // Request database deletion - it may be blocked if connections are open
+    // but the flag will be set and it will be deleted when connections close
+    await page.evaluate(async () => {
+        const databases = await indexedDB.databases()
+        for (const db of databases) {
+            if (db.name) {
+                await new Promise<void>((resolve) => {
+                    const request = indexedDB.deleteDatabase(db.name!)
+                    request.onsuccess = () => resolve()
+                    request.onerror = () => resolve()
+                    request.onblocked = () => {
+                        // Reload will close connections and complete deletion
+                        resolve()
+                    }
+                })
+            }
+        }
+    })
+}
+
 test.describe('Manage Entries', () => {
-    test.beforeEach(async () => {
+    test.beforeEach(async ({ page }) => {
+        // Delete all entries from the backend first
         await deleteAllEntries()
+        // Navigate to a minimal HTML page (before app loads)
+        await page.goto('/entries')
+        // Clear IndexedDB - the app may have already opened connections
+        await clearIndexedDB(page)
+        // Reload to get fresh state after IndexedDB is cleared
+        await page.reload()
+        // Wait for initial sync to complete
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
     })
 
     test.afterAll(async () => {
@@ -53,6 +96,7 @@ test.describe('Manage Entries', () => {
             const entry3 = await createEntry('Third entry')
 
             await page.goto('/entries')
+            await waitForSync(page, 3)
 
             const listItems = page.getByTestId('entries-list').locator('li')
             await expect(listItems).toHaveCount(3)
@@ -67,6 +111,7 @@ test.describe('Manage Entries', () => {
             await createEntry('Test entry')
 
             await page.goto('/entries')
+            await waitForSync(page, 1)
 
             const dateText = await page.getByTestId('entries-list').locator('li').first().textContent()
             expect(dateText).toMatch(/\d{2}\/[A-Z][a-z]{2}\/\d{4}/)
@@ -82,6 +127,7 @@ test.describe('Manage Entries', () => {
             const entry = await createEntry('Test entry')
 
             await page.goto('/entries')
+            await waitForSync(page, 1)
             await page.getByTestId('entries-list').locator('li').first().click()
 
             await expect(page).toHaveURL(`/entries/${entry.id}`)
@@ -93,6 +139,7 @@ test.describe('Manage Entries', () => {
             const entry = await createEntry('To be deleted')
 
             await page.goto('/entries')
+            await waitForSync(page, 1)
 
             let dialogShown = false
             page.on('dialog', async dialog => {
@@ -111,6 +158,7 @@ test.describe('Manage Entries', () => {
             const entry = await createEntry('To be deleted')
 
             await page.goto('/entries')
+            await waitForSync(page, 1)
 
             page.on('dialog', dialog => dialog.accept())
 
@@ -177,8 +225,10 @@ test.describe('Manage Entries', () => {
             const entry = await createEntry('Existing content here')
 
             await page.goto(`/entries/${entry.id}`)
+            await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
 
             const editor = page.getByTestId('editor-content')
+            await expect(editor).toBeVisible({ timeout: 10000 })
             await expect(editor).toContainText('Existing content here')
         })
 

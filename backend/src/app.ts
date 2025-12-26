@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { entriesRoutes } from "./routes/entries.js";
+import { syncRoutes } from "./routes/sync.js";
 import { ensureStorageDirectories } from "./services/storage.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -17,6 +18,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     });
 
     await fastify.register(entriesRoutes, { prefix: "/entries" });
+    await fastify.register(syncRoutes, { prefix: "/sync" });
 
     return fastify;
 }

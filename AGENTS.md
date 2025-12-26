@@ -24,6 +24,7 @@ This will be a journal app, used by a single user to manage journal entries in t
 - [Markdown Journal Entries](design/1766595203-markdown-journal-entries/plan.md)
 - [Storing Journal Entries](design/1766597348-storing-journal-entries/plan.md)
 - [Frontend Manage Entries](design/1766600291-frontend-manage-entries/plan.md)
+- [Progressive Web Application](design/1766740185-progressive-web-application/requirements.md)
 
 ## Development Guidelines
 
@@ -45,6 +46,14 @@ Assume the dev servers for both frontend and backend are already running. Only s
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
 When `TESTING=true` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation. E2E tests are configured to start the backend with this flag.
+
+### PWA and Sync
+
+The frontend is a Progressive Web Application (PWA) with offline support:
+- **IndexedDB Storage:** Journal entries are stored locally in the browser using IndexedDB (`frontend/src/services/db.ts`)
+- **Synchronization:** Entries sync with the backend using hash-based differential sync (`frontend/src/services/sync.ts`)
+- **Sync Protocol:** Uses SHA-256 content hashes for change detection. The backend provides sync endpoints at `/sync/status`, `/sync/manifest`, `/sync/entries/:id`, and `/sync/batch`
+- **Service Worker:** Configured via vite-plugin-pwa for offline caching
 
 When possible use the Playwright MCP server to access the site so you can interact with it and test your changes.
 

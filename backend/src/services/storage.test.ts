@@ -9,6 +9,10 @@ import {
     getAllEntries,
     updateEntry,
     deleteEntry,
+    saveEntry,
+    calculateGlobalHash,
+    getManifest,
+    getAllFullEntries,
     DATA_DIR,
     TRASH_DIR,
 } from "./storage.js";
@@ -195,6 +199,160 @@ Content without creation date`;
         it("should return false for non-existent entry", async () => {
             const result = await deleteEntry("00000000-0000-0000-0000-000000000000");
             expect(result).toBe(false);
+        });
+    });
+
+    describe("saveEntry", () => {
+        it("should save entry with hash", async () => {
+            const entry = {
+                id: "test-entry-id",
+                content: "Test content",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-02T00:00:00.000Z",
+                hash: "abc123def456",
+            };
+
+            const saved = await saveEntry(entry);
+
+            expect(saved).toEqual(entry);
+
+            const retrieved = await getEntry(entry.id);
+            expect(retrieved).not.toBeNull();
+            expect(retrieved!.hash).toBe("abc123def456");
+            expect(retrieved!.content).toBe("Test content");
+        });
+
+        it("should save entry without hash", async () => {
+            const entry = {
+                id: "test-entry-no-hash",
+                content: "Test content",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-02T00:00:00.000Z",
+            };
+
+            await saveEntry(entry);
+
+            const retrieved = await getEntry(entry.id);
+            expect(retrieved).not.toBeNull();
+            expect(retrieved!.hash).toBeUndefined();
+        });
+    });
+
+    describe("getAllFullEntries", () => {
+        it("should return all entries with full content", async () => {
+            await createEntry("First entry content");
+            await createEntry("Second entry content");
+
+            const entries = await getAllFullEntries();
+
+            expect(entries.length).toBe(2);
+            expect(entries[0].content).toBeDefined();
+            expect(entries[1].content).toBeDefined();
+        });
+    });
+
+    describe("getManifest", () => {
+        it("should return manifest with id, hash, and lastUpdated", async () => {
+            const entry = {
+                id: "manifest-test",
+                content: "Test",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-02T00:00:00.000Z",
+                hash: "manifest-hash-123",
+            };
+            await saveEntry(entry);
+
+            const manifest = await getManifest();
+
+            expect(manifest.length).toBe(1);
+            expect(manifest[0]).toEqual({
+                id: "manifest-test",
+                hash: "manifest-hash-123",
+                lastUpdated: "2024-01-02T00:00:00.000Z",
+            });
+        });
+    });
+
+    describe("calculateGlobalHash", () => {
+        it("should return consistent hash for same entries", async () => {
+            await saveEntry({
+                id: "aaa-entry",
+                content: "Content A",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "hash-a",
+            });
+            await saveEntry({
+                id: "bbb-entry",
+                content: "Content B",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "hash-b",
+            });
+
+            const hash1 = await calculateGlobalHash();
+            const hash2 = await calculateGlobalHash();
+
+            expect(hash1).toBe(hash2);
+            expect(hash1.length).toBe(64);
+        });
+
+        it("should produce different hash when entries change", async () => {
+            await saveEntry({
+                id: "change-test",
+                content: "Content",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "original-hash",
+            });
+
+            const hash1 = await calculateGlobalHash();
+
+            await saveEntry({
+                id: "change-test",
+                content: "Content Updated",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-02T00:00:00.000Z",
+                hash: "updated-hash",
+            });
+
+            const hash2 = await calculateGlobalHash();
+
+            expect(hash1).not.toBe(hash2);
+        });
+
+        it("should sort entries by ID for consistent hashing", async () => {
+            await saveEntry({
+                id: "zzz-entry",
+                content: "Z",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "hash-z",
+            });
+
+            const hash1 = await calculateGlobalHash();
+
+            await cleanupTestDirectories();
+            await ensureStorageDirectories();
+
+            await saveEntry({
+                id: "aaa-entry",
+                content: "A",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "hash-a",
+            });
+            await saveEntry({
+                id: "zzz-entry",
+                content: "Z",
+                creationDate: "2024-01-01T00:00:00.000Z",
+                lastUpdated: "2024-01-01T00:00:00.000Z",
+                hash: "hash-z",
+            });
+
+            const hash2 = await calculateGlobalHash();
+
+            expect(hash1).not.toBe(hash2);
         });
     });
 });

@@ -2,9 +2,12 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import JournalEditor from '@/components/JournalEditor.vue'
+import { useJournal } from '@/composables/useJournal'
+import { sync } from '@/services/sync'
 
 const route = useRoute()
 const router = useRouter()
+const { getEntry, saveNewEntry, saveExistingEntry } = useJournal()
 
 const editorRef = ref<InstanceType<typeof JournalEditor> | null>(null)
 const loading = ref(false)
@@ -47,15 +50,15 @@ async function fetchEntry() {
 
     loading.value = true
     try {
-        const response = await fetch(`http://localhost:3013/entries/${entryId.value}`)
-        if (!response.ok) {
-            if (response.status === 404) {
-                router.push('/entries')
-                return
-            }
-            throw new Error('Failed to fetch entry')
+        let entry = await getEntry(entryId.value)
+        if (!entry) {
+            await sync()
+            entry = await getEntry(entryId.value)
         }
-        const entry = await response.json()
+        if (!entry) {
+            router.push('/entries')
+            return
+        }
         originalContent.value = entry.content
         currentContent.value = entry.content
         await nextTick()
@@ -78,23 +81,12 @@ async function save() {
 
     try {
         if (isNewEntry.value) {
-            const response = await fetch('http://localhost:3013/entries', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content }),
-            })
-            if (!response.ok) throw new Error('Failed to create entry')
-            const entry = await response.json()
+            const entry = await saveNewEntry(content)
             originalContent.value = content
             hasUnsavedChanges.value = false
             router.push(`/entries/${entry.id}`)
-        } else {
-            const response = await fetch(`http://localhost:3013/entries/${entryId.value}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content }),
-            })
-            if (!response.ok) throw new Error('Failed to save entry')
+        } else if (entryId.value) {
+            await saveExistingEntry(entryId.value, content)
             originalContent.value = content
             hasUnsavedChanges.value = false
             saveMessage.value = { type: 'success', text: 'Saved' }

@@ -1,17 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
-interface EntryPreview {
-    id: string
-    creationDate: string
-    lastUpdated: string
-    preview: string
-}
+import { useJournal } from '@/composables/useJournal'
 
 const router = useRouter()
-const entries = ref<EntryPreview[]>([])
-const loading = ref(true)
+const { entryPreviews, isLoading, isSyncing, loadEntries, removeEntry } = useJournal()
 const deleteErrors = ref<Record<string, string>>({})
 
 function formatDate(isoDate: string): string {
@@ -23,32 +16,13 @@ function formatDate(isoDate: string): string {
     return `${day}/${month}/${year}`
 }
 
-async function fetchEntries() {
-    try {
-        const response = await fetch('http://localhost:3013/entries')
-        if (!response.ok) throw new Error('Failed to fetch entries')
-        const data = await response.json()
-        entries.value = data.sort((a: EntryPreview, b: EntryPreview) =>
-            new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()
-        )
-    } catch (error) {
-        console.error('Failed to fetch entries:', error)
-    } finally {
-        loading.value = false
-    }
-}
-
-async function deleteEntry(id: string) {
+async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this entry?')) return
 
     deleteErrors.value[id] = ''
     try {
-        const response = await fetch(`http://localhost:3013/entries/${id}`, {
-            method: 'DELETE',
-        })
-        if (!response.ok) throw new Error('Failed to delete entry')
-        entries.value = entries.value.filter(e => e.id !== id)
-    } catch (error) {
+        await removeEntry(id)
+    } catch {
         deleteErrors.value[id] = 'Failed to delete entry'
     }
 }
@@ -61,7 +35,7 @@ function navigateToNew() {
     router.push('/entries/new')
 }
 
-onMounted(fetchEntries)
+onMounted(loadEntries)
 </script>
 
 <template>
@@ -73,21 +47,25 @@ onMounted(fetchEntries)
             </button>
         </div>
 
-        <div v-if="loading" class="loading">Loading entries...</div>
+        <div v-if="isLoading && entryPreviews.length === 0" class="loading">
+            <template v-if="isSyncing">Syncing entries...</template>
+            <template v-else>Loading entries...</template>
+        </div>
 
-        <div v-else-if="entries.length === 0" class="empty-state">
+        <div v-else-if="entryPreviews.length === 0" class="empty-state">
             No journal entries yet. Create your first entry!
         </div>
 
         <ul v-else class="entries" data-testid="entries-list">
-            <li v-for="entry in entries" :key="entry.id" class="entry-item">
+            <li v-for="entry in entryPreviews" :key="entry.id" class="entry-item">
                 <div class="entry-content" @click="navigateToEntry(entry.id)">
                     <span class="entry-date">{{ formatDate(entry.creationDate) }}</span>
+                    <span v-if="entry.syncStatus === 'pending'" class="sync-indicator" title="Pending sync">●</span>
                 </div>
                 <div class="entry-actions">
                     <button
                         class="delete-btn"
-                        @click.stop="deleteEntry(entry.id)"
+                        @click.stop="handleDelete(entry.id)"
                         :data-testid="`delete-btn-${entry.id}`"
                     >
                         Delete
@@ -168,6 +146,12 @@ onMounted(fetchEntries)
 
 .entry-date {
     font-weight: 500;
+}
+
+.sync-indicator {
+    color: var(--color-warning, #f59e0b);
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
 }
 
 .entry-actions {

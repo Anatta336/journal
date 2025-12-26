@@ -1,6 +1,62 @@
 import { test, expect } from '@playwright/test'
 
+const API_BASE = 'http://localhost:3013'
+
+async function createEntry(content: string): Promise<{ id: string }> {
+    const response = await fetch(`${API_BASE}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+    })
+    return response.json()
+}
+
+async function deleteEntry(id: string): Promise<void> {
+    await fetch(`${API_BASE}/entries/${id}`, { method: 'DELETE' })
+}
+
+async function deleteAllEntries(): Promise<void> {
+    const response = await fetch(`${API_BASE}/entries`)
+    if (!response.ok) return
+    const entries = await response.json()
+    if (!Array.isArray(entries)) return
+    for (const entry of entries) {
+        await fetch(`${API_BASE}/entries/${entry.id}`, { method: 'DELETE' })
+    }
+}
+
+async function clearIndexedDB(page: import('@playwright/test').Page): Promise<void> {
+    await page.evaluate(async () => {
+        const databases = await indexedDB.databases()
+        for (const db of databases) {
+            if (db.name) {
+                await new Promise<void>((resolve) => {
+                    const request = indexedDB.deleteDatabase(db.name!)
+                    request.onsuccess = () => resolve()
+                    request.onerror = () => resolve()
+                    request.onblocked = () => resolve()
+                })
+            }
+        }
+    })
+}
+
 test.describe('Markdown Escaping', () => {
+    test.beforeEach(async ({ page }) => {
+        // Delete all entries from backend first
+        await deleteAllEntries()
+        // Navigate to a page to clear IndexedDB
+        await page.goto('/entries')
+        await clearIndexedDB(page)
+        // Reload to get fresh state
+        await page.reload()
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+    })
+
+    test.afterAll(async () => {
+        await deleteAllEntries()
+    })
+
     test('escaped characters are preserved and displayed correctly', async ({ page }) => {
         // Create a new entry
         await page.goto('/entries/new')
@@ -30,16 +86,19 @@ test.describe('Markdown Escaping', () => {
     })
 
     test('loading an entry with escaped characters displays them correctly', async ({ page }) => {
-        // This test assumes we can inject an entry or we use the one provided in the issue
-        // The issue mentions 95456ad7-a15f-41c9-abd4-7759e91cae8a.md
-        // We can try to navigate to it if it exists in the test data
+        // Create entry with escaped markdown via API and then load it
+        const entry = await createEntry('Here is a \\* test \\*.')
 
-        await page.goto('/entries/95456ad7-a15f-41c9-abd4-7759e91cae8a')
+        // Navigate to the entry - sync will download it
+        await page.goto(`/entries/${entry.id}`)
 
-        await expect(page.getByTestId('editor-content')).toBeVisible()
+        // Wait for sync to complete
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
 
-        // The user says it displays "Here is a  test ." instead of "Here is a * test *."
-        // Note: the attachment shows "Here is a \* test \*." in the file.
+        // Wait for editor to load
+        await expect(page.getByTestId('editor-content')).toBeVisible({ timeout: 15000 })
         await expect(page.getByTestId('editor-content')).toContainText('Here is a * test *.')
+
+        await deleteEntry(entry.id)
     })
 })
