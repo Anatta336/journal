@@ -144,9 +144,6 @@ watch(editorRef, (editor) => {
 <template>
     <div class="editor-page">
         <div class="editor-header">
-            <router-link to="/entries" class="back-link" data-testid="back-link">
-                ← Back to List
-            </router-link>
         </div>
 
         <div v-if="loading" class="loading">Loading entry...</div>
@@ -185,15 +182,6 @@ watch(editorRef, (editor) => {
 
 .editor-header {
     margin-bottom: var(--spacing-md);
-}
-
-.back-link {
-    color: var(--color-primary);
-    text-decoration: none;
-}
-
-.back-link:hover {
-    text-decoration: underline;
 }
 
 .loading {

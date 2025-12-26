@@ -92,7 +92,7 @@ function toggleBulletList() {
 .editor-toolbar {
     display: flex;
     gap: var(--spacing-xs, 0.25rem);
-    padding: var(--spacing-sm, 0.5rem);
+    padding: var(--spacing-xs, 0.25rem);
     border-bottom: 1px solid var(--color-border, #e0e0e0);
     background-color: var(--color-bg-subtle, #f8f9fa);
 }
@@ -114,7 +114,7 @@ function toggleBulletList() {
 }
 
 .toolbar-button:hover {
-    background-color: var(--color-hover, #e9ecef);
+    background-color: var(--color-hover-bg, #e9ecef);
 }
 
 .toolbar-button:focus-visible {

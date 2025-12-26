@@ -7,8 +7,13 @@ const { isOnline, isSyncing } = useJournalInit()
 <template>
     <div class="app">
         <header class="app-header">
-            <h1>Journal</h1>
+            <router-link to="/entries" data-testid="back-link">
+                <h1>Journal</h1>
+            </router-link>
             <div class="header-right">
+                <router-link to="/settings" class="settings-link" data-testid="settings-link">
+                    Settings
+                </router-link>
                 <span class="sync-status" :class="{ syncing: isSyncing }" data-testid="sync-status">
                     <template v-if="isSyncing">Syncing...</template>
                 </span>
@@ -19,9 +24,6 @@ const { isOnline, isSyncing } = useJournalInit()
                 >
                     {{ isOnline ? 'Online' : 'Offline' }}
                 </span>
-                <router-link to="/settings" class="settings-link" data-testid="settings-link">
-                    Settings
-                </router-link>
             </div>
         </header>
         <main class="app-main">
@@ -32,17 +34,17 @@ const { isOnline, isSyncing } = useJournalInit()
 
 <style scoped>
 .app {
-    --color-bg: #ffffff;
-    --color-bg-subtle: #f8f9fa;
-    --color-bg-focus: #fafafa;
-    --color-text: #1a1a1a;
-    --color-border: #e0e0e0;
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
-    --color-hover: #e9ecef;
-    --color-code-bg: #f3f4f6;
-    --color-code-text: #374151;
-    --color-code-block-text: #e5e7eb;
+    --color-bg: #1f1f1f;
+    --color-bg-subtle: #181818;
+    --color-bg-focus: #2d2d2f;
+    --color-text: #cccccc;
+    --color-border: #2b2b2b;
+    --color-primary: #3d77d0;
+    --color-primary-hover: #2b4ea0;
+    --color-hover-bg: #373838;
+    --color-code-bg: #3b3d41;
+    --color-code-text: #aedafc;
+    --color-select-bg: #344e76;
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --spacing-xs: 0.25rem;
@@ -61,10 +63,11 @@ const { isOnline, isSyncing } = useJournalInit()
     font-size: var(--font-size-base);
     color: var(--color-text);
     background-color: var(--color-bg);
+    padding: var(--spacing-sm);
 }
 
 .app-header {
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: 0 0 var(--spacing-sm) 0;
     border-bottom: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
@@ -73,10 +76,19 @@ const { isOnline, isSyncing } = useJournalInit()
     gap: var(--spacing-sm);
 }
 
+.app-header a {
+    text-decoration: none;
+}
+
+.app-header a:hover {
+    text-decoration: underline;
+}
+
 .app-header h1 {
     margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-primary);
 }
 
 .header-right {
@@ -126,7 +138,7 @@ const { isOnline, isSyncing } = useJournalInit()
 }
 
 .app-main {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-sm) 0 0 0;
     max-width: 800px;
     margin: 0 auto;
 }

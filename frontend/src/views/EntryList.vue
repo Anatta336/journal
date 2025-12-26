@@ -57,8 +57,12 @@ onMounted(loadEntries)
         </div>
 
         <ul v-else class="entries" data-testid="entries-list">
-            <li v-for="entry in entryPreviews" :key="entry.id" class="entry-item">
-                <div class="entry-content" @click="navigateToEntry(entry.id)">
+            <li v-for="entry in entryPreviews"
+                :key="entry.id"
+                class="entry-item"
+                @click="navigateToEntry(entry.id)"
+            >
+                <div class="entry-content">
                     <span class="entry-date">{{ formatDate(entry.creationDate) }}</span>
                     <span v-if="entry.syncStatus === 'pending'" class="sync-indicator" title="Pending sync">●</span>
                 </div>
@@ -88,7 +92,7 @@ onMounted(loadEntries)
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
 }
 
 .list-header h2 {
@@ -128,6 +132,7 @@ onMounted(loadEntries)
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
     padding: var(--spacing-md);
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
@@ -136,12 +141,11 @@ onMounted(loadEntries)
 }
 
 .entry-item:hover {
-    background-color: var(--color-hover);
+    background-color: var(--color-hover-bg);
 }
 
 .entry-content {
     flex: 1;
-    cursor: pointer;
 }
 
 .entry-date {

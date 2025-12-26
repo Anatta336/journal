@@ -166,6 +166,10 @@ defineExpose({
     padding: var(--spacing-md, 1rem);
 }
 
+.editor-content :deep(::selection) {
+    background-color: var(--color-select-bg, #b3d4fc);
+}
+
 .editor-content :deep(.tiptap) {
     outline: none;
     min-height: 280px;
@@ -173,7 +177,7 @@ defineExpose({
 }
 
 .editor-content :deep(.tiptap:focus) {
-    background-color: var(--color-bg-focus, #fafafa);
+    background-color: var(--color-bg, #ffffff);
 }
 
 .editor-content :deep(.tiptap p) {
@@ -202,7 +206,8 @@ defineExpose({
 }
 
 .editor-content :deep(.tiptap pre) {
-    background-color: var(--color-code-bg, #1f2937);
+    background-color: var(--color-code-bg, #f3f4f6);
+    color: var(--color-code-text, #374151);
     border-radius: var(--border-radius, 0.375rem);
     padding: var(--spacing-md, 1rem);
     margin: 0.75em 0;
@@ -213,7 +218,6 @@ defineExpose({
     background-color: transparent;
     padding: 0;
     font-size: 0.875rem;
-    color: var(--color-code-block-text, #e5e7eb);
     line-height: 1.5;
 }
 

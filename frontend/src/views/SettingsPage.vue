@@ -91,12 +91,6 @@ onMounted(() => {
                 </span>
             </div>
         </section>
-
-        <div class="back-link-container">
-            <router-link to="/entries" class="back-link" data-testid="settings-back-link">
-                ← Back to Entries
-            </router-link>
-        </div>
     </div>
 </template>
 
@@ -172,18 +166,5 @@ onMounted(() => {
 
 .sync-result.error {
     color: #ef4444;
-}
-
-.back-link-container {
-    margin-top: 2rem;
-}
-
-.back-link {
-    color: var(--color-primary, #2563eb);
-    text-decoration: none;
-}
-
-.back-link:hover {
-    text-decoration: underline;
 }
 </style>
