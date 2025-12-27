@@ -326,3 +326,74 @@ export async function deleteEntryAndSync(id: string): Promise<void> {
         registerBackgroundSync()
     }
 }
+
+export async function forceRefresh(onProgress?: (current: number, total: number) => void): Promise<void> {
+    if (!navigator.onLine) {
+        throw new Error('Cannot force refresh while offline')
+    }
+
+    if (isSyncing) {
+        throw new Error('A sync operation is already in progress')
+    }
+
+    notifySyncState(true)
+
+    try {
+        const serverManifest = await getServerManifest()
+        const serverIdSet = new Set(serverManifest.map((e) => e.id))
+
+        const localEntries = await getAllEntriesIncludingTrashed()
+        for (const local of localEntries) {
+            if (!serverIdSet.has(local.id)) {
+                await hardDeleteEntry(local.id)
+            }
+        }
+
+        const total = serverManifest.length
+        let current = 0
+        const concurrencyLimit = 5
+        const queue = [...serverManifest]
+
+        async function processEntry(entry: ManifestEntry): Promise<void> {
+            const serverEntry = await getServerEntry(entry.id)
+            if (serverEntry) {
+                const localEntry: LocalEntry = {
+                    id: serverEntry.id,
+                    content: serverEntry.content,
+                    creationDate: serverEntry.creationDate,
+                    lastUpdated: serverEntry.lastUpdated,
+                    hash: serverEntry.hash,
+                    tags: serverEntry.tags,
+                    trashed: false,
+                    syncStatus: 'synced',
+                }
+                await saveLocalEntry(localEntry)
+            }
+            current++
+            onProgress?.(current, total)
+        }
+
+        const activePromises: Promise<void>[] = []
+        while (queue.length > 0 || activePromises.length > 0) {
+            while (activePromises.length < concurrencyLimit && queue.length > 0) {
+                const entry = queue.shift()!
+                const promise = processEntry(entry).finally(() => {
+                    const index = activePromises.indexOf(promise)
+                    if (index > -1) activePromises.splice(index, 1)
+                })
+                activePromises.push(promise)
+            }
+            if (activePromises.length > 0) {
+                await Promise.race(activePromises)
+            }
+        }
+
+        const newServerHash = await getServerGlobalHash()
+        await setSyncState({
+            lastSyncTime: new Date().toISOString(),
+            globalHash: newServerHash || undefined,
+        })
+    } finally {
+        notifySyncState(false)
+    }
+}

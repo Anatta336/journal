@@ -2,10 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { useJournal } from '@/composables/useJournal'
 
-const { syncNow, isSyncing, lastSyncTime } = useJournal()
+const { syncNow, forceRefresh, isSyncing, lastSyncTime, isOnline, refreshProgress } = useJournal()
 
 const storageUsed = ref<string>('')
 const syncResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+const forceRefreshResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+const isForceRefreshing = ref(false)
 
 async function updateStorageEstimate() {
     if (navigator.storage && navigator.storage.estimate) {
@@ -40,6 +42,30 @@ async function handleSyncNow() {
         syncResult.value = { type: 'error', text: 'Sync failed. Please try again.' }
     }
     await updateStorageEstimate()
+}
+
+async function handleForceRefresh() {
+    const confirmed = window.confirm(
+        'Force Refresh will overwrite all local changes with server data. ' +
+        'Any unsynced local entries will be lost, and entries deleted on the server will be removed locally. ' +
+        'Are you sure you want to continue?'
+    )
+    if (!confirmed) return
+
+    forceRefreshResult.value = null
+    isForceRefreshing.value = true
+    try {
+        await forceRefresh()
+        forceRefreshResult.value = { type: 'success', text: 'Force refresh completed successfully' }
+    } catch (error) {
+        forceRefreshResult.value = {
+            type: 'error',
+            text: error instanceof Error ? error.message : 'Force refresh failed. Please try again.',
+        }
+    } finally {
+        isForceRefreshing.value = false
+        await updateStorageEstimate()
+    }
 }
 
 onMounted(() => {
@@ -77,6 +103,39 @@ onMounted(() => {
                     data-testid="sync-result"
                 >
                     {{ syncResult.text }}
+                </span>
+            </div>
+
+            <div class="setting-row force-refresh-row">
+                <button
+                    class="force-refresh-btn"
+                    @click="handleForceRefresh"
+                    :disabled="isSyncing || isForceRefreshing || !isOnline"
+                    data-testid="force-refresh-btn"
+                >
+                    {{ isForceRefreshing ? 'Refreshing...' : 'Force Refresh' }}
+                </button>
+                <span
+                    v-if="isForceRefreshing && refreshProgress.total > 0"
+                    class="refresh-progress"
+                    data-testid="refresh-progress"
+                >
+                    {{ refreshProgress.current }}/{{ refreshProgress.total }}
+                </span>
+                <span
+                    v-else-if="forceRefreshResult"
+                    class="sync-result"
+                    :class="forceRefreshResult.type"
+                    data-testid="force-refresh-result"
+                >
+                    {{ forceRefreshResult.text }}
+                </span>
+                <span
+                    v-else-if="!isOnline"
+                    class="offline-message"
+                    data-testid="force-refresh-offline-msg"
+                >
+                    Offline - Force refresh requires network
                 </span>
             </div>
         </section>
@@ -166,5 +225,40 @@ onMounted(() => {
 
 .sync-result.error {
     color: #ef4444;
+}
+
+.force-refresh-row {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.force-refresh-btn {
+    padding: 0.5rem 1rem;
+    background: var(--color-danger, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.force-refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.force-refresh-btn:hover:not(:disabled) {
+    background: var(--color-danger-hover, #b91c1c);
+}
+
+.refresh-progress {
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #6b7280);
+}
+
+.offline-message {
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #6b7280);
 }
 </style>

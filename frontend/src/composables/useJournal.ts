@@ -14,6 +14,7 @@ import {
     getIsSyncing,
     startPeriodicSync,
     stopPeriodicSync,
+    forceRefresh as forceRefreshSync,
 } from '@/services/sync'
 
 export interface EntryPreview {
@@ -31,6 +32,7 @@ const isSyncing = ref(getIsSyncing())
 const lastSyncTime = ref<string | undefined>()
 const isInitialized = ref(false)
 const isLoading = ref(true)
+const refreshProgress = ref<{ current: number; total: number }>({ current: 0, total: 0 })
 
 export function useJournal() {
     async function loadEntries() {
@@ -77,6 +79,14 @@ export function useJournal() {
             await loadEntries()
         }
         return result
+    }
+
+    async function forceRefresh(): Promise<void> {
+        refreshProgress.value = { current: 0, total: 0 }
+        await forceRefreshSync((current, total) => {
+            refreshProgress.value = { current, total }
+        })
+        await loadEntries()
     }
 
     const entryPreviews = computed<EntryPreview[]>(() => {
@@ -138,6 +148,7 @@ export function useJournal() {
         isSyncing,
         lastSyncTime,
         isLoading,
+        refreshProgress,
         loadEntries,
         refreshEntries,
         getEntry,
@@ -145,6 +156,7 @@ export function useJournal() {
         saveExistingEntry,
         removeEntry,
         syncNow,
+        forceRefresh,
         setupListeners,
         initialize,
     }
