@@ -14,6 +14,8 @@ Only move on to the next part of the plan once you are completely satisfied that
 
 If available, make use of the Playwright MCP server to interact with the application as you work to confirm functionality and test your changes.
 
-Support your work with automated testing using Vitest for unit tests and Playwright for end-to-end tests. Automated testing should include how a user would actually interact, just just testing parts in isolation.
+Support your work with automated testing using Vitest for unit and feature tests, and Playwright for end-to-end tests. Automated testing should include how a user would actually interact, not just testing parts in isolation.
 
 Ensure that all new code is covered by appropriate tests and that existing tests continue to pass.
+
+Once complete, review the documentation of this project and make any updates needed to keep it accurate and in line with the documentation standards.

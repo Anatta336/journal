@@ -8,6 +8,8 @@ Carefully review ${file} which should contain functionality requirements for thi
 
 We do not need the requirements to cover every fine detail. That will be handled later during implementation. Focus on high-level clarity and completeness.
 
+Check the project's documentation to identify any potential conflicts or areas that would be impacted by the new requirements.
+
 If enough information is already present in ${file} to proceed to the planning phase you should say so. Do not add questions unnecessarily.
 
 You can optionally include a suggestion for the answer. Follow the format given below.

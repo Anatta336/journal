@@ -6,7 +6,7 @@ tools: ['read/readFile', 'edit/createFile', 'edit/editFiles', 'search', 'web']
 ---
 Carefully review ${file} which should contain functionality requirements for this project. This may be new functionalty or changes to existing functionality. Your goal is to create a clear and actionable plan for implementation. Write the plan into a `plan.md` file in ${fileDirname} alongside the ${file}. Do not change ${file} itself.
 
-We do not need the plan to cover the finest detail, just what will be done to achieve the requirements. Focus on covering all the requirements with a clear set of actions. Where applicable you can reference relevant files. Your plan will be used to guide the implementation phase, you should not write the actual code as part of this plan. Instead plan on what the code will need to do.
+The plan does not need to cover the finest detail, just what will be done to achieve the requirements. Focus on covering all the requirements with a clear set of actions. Where applicable you can reference relevant files. Your plan will be used to guide the implementation phase, you should not write the actual code as part of this plan. Instead plan on what the code will need to do.
 
 You can and should review other files within the project as a whole to understand how the requirements and your plan fit into the existing project. If there are very few other files, you may assume this is a new project and the plan should be include establishing the initial architecture and setup.
 

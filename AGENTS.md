@@ -10,24 +10,23 @@ Use the edit file tool to make changes, rather than terminal commands.
 
 ## Project Overview
 
-This will be a journal app, used by a single user to manage journal entries in the form of Markdown.
+A journal app for a single user to manage journal entries in the form of Markdown with full offline support.
 
 **Core Technologies:**
 
-- **Language:** TypeScript.
-- **Frontend:** Vue 3 using TypeScript. No external styling dependencies.
-- **Backend:** Fastify using TypeScript.
+- **Language:** TypeScript
+- **Frontend:** Vue 3 with Composition API. No external styling dependencies.
+- **Backend:** Fastify with Zod validation
 - **Build:** Vite
+- **Editor:** Tiptap (ProseMirror-based)
 
-## Design Documents
+## Documentation
 
-- [Markdown Journal Entries](design/1766595203-markdown-journal-entries/plan.md)
-- [Storing Journal Entries](design/1766597348-storing-journal-entries/plan.md)
-- [Frontend Manage Entries](design/1766600291-frontend-manage-entries/plan.md)
-- [Progressive Web Application](design/1766740185-progressive-web-application/requirements.md)
-- [Tags](design/1766781056-tags/plan.md)
-- [Fix Tag Sync](design/1766831644-fix-tag-sync/plan.md)
-- [Force Refresh](design/1766834616-force-refresh/plan.md)
+The documentation is in the `documentation/` directory. Start from `documentation/overview.md` which gives a high-level overview of the project and links to other documentation files.
+
+When you make changes to the project ensure that the documentation is kept up to date. Update existing files as needed, and create new files for any new features or area.
+
+The documentation should focus on the "what" and "why" of the project, rather than the "how". Implementation details should be kept in the code itself, with comments as needed to explain any non-obvious parts.
 
 ## Development Guidelines
 
