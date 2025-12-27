@@ -2,4 +2,7 @@
 node_modules
 dist
 
+# Test outputs.
 frontend/test-results/
+frontend/coverage/
+backend/coverage/

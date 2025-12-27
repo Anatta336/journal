@@ -12,6 +12,16 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['tests/unit/**/*.spec.ts']
+    include: ['tests/unit/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: [
+        'src/main.ts',
+        'src/vite-env.d.ts',
+        '**/*.spec.ts'
+      ],
+      reporter: ['text', 'json', 'html']
+    }
   }
 })

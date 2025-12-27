@@ -37,6 +37,7 @@ Assume the dev servers for both frontend and backend are already running. Only s
 - **Run Dev:** `npm run dev --prefix frontend` Starts Vite server with site available at <http://localhost:5173/>
 - **Build:** `npm run build --prefix frontend` Compiles to `dist/`
 - **Unit Tests:** `npm run test:unit --prefix frontend` Runs Vitest unit tests.
+- **Unit Test Coverage:** `npm run test:unit:coverage --prefix frontend` Runs Vitest unit tests with coverage.
 - **E2E Tests:** `npm run test:e2e --prefix frontend` Runs Playwright end-to-end tests.
 
 ### Backend
@@ -44,6 +45,7 @@ Assume the dev servers for both frontend and backend are already running. Only s
 - **Run Dev:** `npm run dev --prefix backend` Starts Fastify server at <http://localhost:3013/>
 - **Build:** `npm run build --prefix backend` Compiles TypeScript to `dist/`
 - **Unit Tests:** `npm run test --prefix backend` Runs Vitest tests for storage and API.
+- **Unit Test Coverage:** `npm run test:coverage --prefix backend` Runs Vitest tests with coverage.
 
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
