@@ -28,7 +28,10 @@ export async function startServer(): Promise<FastifyInstance> {
 
     try {
         await ensureStorageDirectories();
-        await fastify.listen({ port: 3013, host: "0.0.0.0" });
+        const isTesting = process.env.TESTING === "true" || process.env.NODE_ENV === "test";
+        const defaultPort = isTesting ? 3014 : 3013;
+        const port = process.env.PORT ? parseInt(process.env.PORT) : defaultPort;
+        await fastify.listen({ port, host: "0.0.0.0" });
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);

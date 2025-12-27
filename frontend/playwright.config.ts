@@ -8,7 +8,7 @@ export default defineConfig({
     workers: 1,
     reporter: 'list',
     use: {
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://localhost:5174',
         trace: 'on-first-retry',
     },
     projects: [
@@ -20,12 +20,12 @@ export default defineConfig({
     webServer: [
         {
             command: 'TESTING=true npm run dev --prefix ../backend',
-            url: 'http://localhost:3013/health',
+            url: 'http://localhost:3014/health',
             reuseExistingServer: !process.env.CI,
         },
         {
-            command: 'npm run dev',
-            url: 'http://localhost:5173',
+            command: 'PORT=5174 VITE_BACKEND_PORT=3014 npm run dev',
+            url: 'http://localhost:5174',
             reuseExistingServer: !process.env.CI,
         },
     ],

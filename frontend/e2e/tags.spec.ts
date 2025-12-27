@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const API_BASE = 'http://localhost:3013'
+const API_BASE = `http://localhost:${process.env.VITE_BACKEND_PORT || '3014'}`
 
 interface EntryResponse {
     id: string

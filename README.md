@@ -1,5 +1,18 @@
 # Journal
 
+## Automated Testing
+There are three sets of automated tests in this project:
+- `npm run test --prefix backend`
+- `npm run test:unit --prefix frontend`
+- `npm run test:e2e --prefix frontend`
+
+The end-to-end tests use Playwright and are by far the slowest to run because they interact with the app using a real browser.
+
+To run a single test from one of the suites:
+```bash
+npm run test:e2e --prefix frontend -- -g "user creates multi-item list"
+```
+
 ## Playwright for AI Agents
 AI Agents will do best if they can access a browser to test with. This project is configured to work with Playwright's MCP server via a bridge extension for Chromium.
 

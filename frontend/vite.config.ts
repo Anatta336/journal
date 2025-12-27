@@ -38,10 +38,10 @@ export default defineConfig({
     },
     server: {
         host: true,
-        port: 5173,
+        port: Number(process.env.PORT) || 5173,
         proxy: {
             '/api': {
-                target: 'http://localhost:3013',
+                target: `http://localhost:${process.env.VITE_BACKEND_PORT || '3013'}`,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, '')
             }

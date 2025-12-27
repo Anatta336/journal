@@ -46,7 +46,7 @@ Assume the dev servers for both frontend and backend are already running. Only s
 
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
-When `TESTING=true` or `NODE_ENV=test` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation. E2E tests are configured to start the backend with the `TESTING=true` flag.
+When `TESTING=true` or `NODE_ENV=test` environment variable is set, the backend uses `data-test/entries/` instead for test data isolation and defaults to port `3014`. E2E tests are configured to start the backend with the `TESTING=true` flag and the frontend on port `5174` to avoid conflicts with development servers.
 
 ### PWA and Sync
 
