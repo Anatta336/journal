@@ -26,6 +26,7 @@ This will be a journal app, used by a single user to manage journal entries in t
 - [Frontend Manage Entries](design/1766600291-frontend-manage-entries/plan.md)
 - [Progressive Web Application](design/1766740185-progressive-web-application/requirements.md)
 - [Tags](design/1766781056-tags/plan.md)
+- [Fix Tag Sync](design/1766831644-fix-tag-sync/plan.md)
 
 ## Development Guidelines
 

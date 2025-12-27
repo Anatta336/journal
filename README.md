@@ -1,5 +1,9 @@
 # Journal
 
+This is a simple Markdown file based notebook. You really shouldn't use it and are almost certainly better served by an existing solution like Obsidian or Joplin.
+
+This project exists as a testing ground.
+
 ## Automated Testing
 There are three sets of automated tests in this project:
 - `npm run test --prefix backend`

@@ -259,7 +259,7 @@ export async function registerBackgroundSync(): Promise<void> {
 export async function createEntry(content: string, tags?: string[]): Promise<LocalEntry> {
     const id = crypto.randomUUID()
     const now = new Date().toISOString()
-    const hash = await calculateEntryHash(content)
+    const hash = await calculateEntryHash(content, { tags })
 
     const entry: LocalEntry = {
         id,
@@ -287,7 +287,7 @@ export async function updateEntry(id: string, content: string, tags?: string[]):
     const existing = await getLocalEntry(id)
     if (!existing || existing.trashed) return null
 
-    const hash = await calculateEntryHash(content)
+    const hash = await calculateEntryHash(content, { tags })
     const now = new Date().toISOString()
 
     const updated: LocalEntry = {

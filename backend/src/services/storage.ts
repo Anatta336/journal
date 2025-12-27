@@ -13,8 +13,24 @@ const dataFolder = isTesting ? "data-test" : "data";
 const DATA_DIR = path.join(PROJECT_ROOT, dataFolder, "entries");
 const TRASH_DIR = path.join(DATA_DIR, ".trash");
 
-function calculateEntryHash(content: string): string {
-    return createHash("sha256").update(content).digest("hex");
+export interface HashableMetadata {
+    tags?: string[];
+}
+
+function normalizeMetadata(metadata?: HashableMetadata): Record<string, unknown> {
+    const normalized: Record<string, unknown> = {};
+    if (metadata?.tags && metadata.tags.length > 0) {
+        normalized.tags = [...metadata.tags].sort();
+    }
+    return normalized;
+}
+
+export function calculateEntryHash(content: string, metadata?: HashableMetadata): string {
+    const normalizedMeta = normalizeMetadata(metadata);
+    const metaString = Object.keys(normalizedMeta).length > 0
+        ? JSON.stringify(normalizedMeta)
+        : "";
+    return createHash("sha256").update(content + metaString).digest("hex");
 }
 
 export interface EntryMetadata {
@@ -153,7 +169,7 @@ async function saveEntryToFile(
 export async function createEntry(content: string, tags?: string[]): Promise<Entry> {
     const id = uuidv4();
     const now = new Date().toISOString();
-    const hash = calculateEntryHash(content);
+    const hash = calculateEntryHash(content, { tags });
 
     await saveEntryToFile(id, content, now, now, hash, tags);
 
@@ -174,7 +190,7 @@ export async function updateEntry(id: string, content: string, tags?: string[]):
     }
 
     const now = new Date().toISOString();
-    const hash = calculateEntryHash(content);
+    const hash = calculateEntryHash(content, { tags });
     await saveEntryToFile(id, content, existing.creationDate, now, hash, tags);
 
     return {

@@ -13,6 +13,7 @@ import {
     calculateGlobalHash,
     getManifest,
     getAllFullEntries,
+    calculateEntryHash,
     DATA_DIR,
     TRASH_DIR,
 } from "./storage.js";
@@ -430,6 +431,60 @@ Content without creation date`;
             const parsed = matter(fileContent);
 
             expect(parsed.data.tags).toEqual(["work", "personal"]);
+        });
+    });
+
+    describe("calculateEntryHash", () => {
+        it("should return different hash when tags are added", () => {
+            const content = "Test content";
+            const hashWithoutTags = calculateEntryHash(content);
+            const hashWithTags = calculateEntryHash(content, { tags: ["work"] });
+
+            expect(hashWithoutTags).not.toBe(hashWithTags);
+        });
+
+        it("should return different hash when tags are removed", () => {
+            const content = "Test content";
+            const hashWithTags = calculateEntryHash(content, { tags: ["work"] });
+            const hashWithoutTags = calculateEntryHash(content);
+
+            expect(hashWithTags).not.toBe(hashWithoutTags);
+        });
+
+        it("should return different hash when tags are modified", () => {
+            const content = "Test content";
+            const hash1 = calculateEntryHash(content, { tags: ["work"] });
+            const hash2 = calculateEntryHash(content, { tags: ["personal"] });
+
+            expect(hash1).not.toBe(hash2);
+        });
+
+        it("should return same hash for undefined tags and empty tags array", () => {
+            const content = "Test content";
+            const hashUndefined = calculateEntryHash(content);
+            const hashEmpty = calculateEntryHash(content, { tags: [] });
+            const hashUndefinedExplicit = calculateEntryHash(content, { tags: undefined });
+
+            expect(hashUndefined).toBe(hashEmpty);
+            expect(hashUndefined).toBe(hashUndefinedExplicit);
+        });
+
+        it("should return same hash regardless of tag order", () => {
+            const content = "Test content";
+            const hash1 = calculateEntryHash(content, { tags: ["work", "personal", "journal"] });
+            const hash2 = calculateEntryHash(content, { tags: ["journal", "work", "personal"] });
+            const hash3 = calculateEntryHash(content, { tags: ["personal", "journal", "work"] });
+
+            expect(hash1).toBe(hash2);
+            expect(hash1).toBe(hash3);
+        });
+
+        it("should return consistent hash for same inputs", () => {
+            const content = "Test content";
+            const hash1 = calculateEntryHash(content, { tags: ["work"] });
+            const hash2 = calculateEntryHash(content, { tags: ["work"] });
+
+            expect(hash1).toBe(hash2);
         });
     });
 });

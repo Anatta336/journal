@@ -205,6 +205,37 @@ test.describe('Tags', () => {
             await page.reload()
             await expect(page.getByTestId('selected-tag-remove-me')).not.toBeVisible()
         })
+
+        test('changing only tags triggers sync to backend', async ({ page, request }) => {
+            const entry = await createEntry('Content stays the same', ['original-tag'])
+
+            await page.goto(`/entries/${entry.id}`)
+            await page.reload()
+
+            await expect(page.getByTestId('selected-tag-original-tag')).toBeVisible()
+
+            await page.getByTestId('remove-tag-original-tag').click()
+
+            const tagInput = page.getByTestId('tag-input')
+            await tagInput.fill('new-tag')
+            await tagInput.press('Enter')
+
+            await expect(page.getByTestId('selected-tag-new-tag')).toBeVisible()
+
+            await page.getByTestId('save-btn').click()
+            await expect(page.getByTestId('save-success')).toBeVisible()
+
+            await page.waitForFunction(
+                () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
+                { timeout: 5000 }
+            )
+
+            const response = await request.get(`${API_BASE}/entries/${entry.id}`)
+            const updatedEntry = await response.json()
+
+            expect(updatedEntry.content.trim()).toBe('Content stays the same')
+            expect(updatedEntry.tags).toEqual(['new-tag'])
+        })
     })
 
     test.describe('Tag Autocomplete', () => {
