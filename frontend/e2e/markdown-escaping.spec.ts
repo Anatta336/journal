@@ -50,7 +50,7 @@ test.describe('Markdown Escaping', () => {
         await clearIndexedDB(page)
         // Reload to get fresh state
         await page.reload()
-        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 2000 })
     })
 
     test.afterAll(async () => {
@@ -93,7 +93,7 @@ test.describe('Markdown Escaping', () => {
         await page.goto(`/entries/${entry.id}`)
 
         // Wait for sync to complete
-        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 2000 })
 
         // Wait for editor to load
         await expect(page.getByTestId('editor-content')).toBeVisible({ timeout: 15000 })

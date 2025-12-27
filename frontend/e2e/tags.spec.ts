@@ -55,7 +55,7 @@ test.describe('Tags', () => {
         await page.reload()
         await page.waitForFunction(
             () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
-            { timeout: 10000 }
+            { timeout: 2000 }
         )
     })
 
@@ -214,6 +214,11 @@ test.describe('Tags', () => {
             await page.goto('/entries/new')
             await page.reload()
 
+            await page.waitForFunction(
+                () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
+                { timeout: 2000 }
+            )
+
             const tagInput = page.getByTestId('tag-input')
             await tagInput.focus()
 
@@ -228,6 +233,11 @@ test.describe('Tags', () => {
             await page.goto('/entries/new')
             await page.reload()
 
+            await page.waitForFunction(
+                () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
+                { timeout: 2000 }
+            )
+
             const tagInput = page.getByTestId('tag-input')
             await tagInput.fill('wor')
 
@@ -240,6 +250,11 @@ test.describe('Tags', () => {
 
             await page.goto('/entries/new')
             await page.reload()
+
+            await page.waitForFunction(
+                () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
+                { timeout: 2000 }
+            )
 
             const tagInput = page.getByTestId('tag-input')
             await tagInput.focus()
@@ -254,6 +269,11 @@ test.describe('Tags', () => {
 
             await page.goto('/entries/new')
             await page.reload()
+
+            await page.waitForFunction(
+                () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),
+                { timeout: 2000 }
+            )
 
             const tagInput = page.getByTestId('tag-input')
             await tagInput.fill('worktag')

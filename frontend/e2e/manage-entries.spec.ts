@@ -32,12 +32,12 @@ async function waitForSync(page: import('@playwright/test').Page, expectedCount:
     // Just reload to force a fresh sync from the backend
     await page.reload()
     // Wait for sync to complete
-    await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+    await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 2000 })
 
     if (expectedCount === 0) {
-        await page.getByText('No journal entries yet').waitFor({ state: 'visible', timeout: 10000 })
+        await page.getByText('No journal entries yet').waitFor({ state: 'visible', timeout: 2000 })
     } else {
-        await page.getByTestId('entries-list').locator('li').first().waitFor({ state: 'visible', timeout: 10000 })
+        await page.getByTestId('entries-list').locator('li').first().waitFor({ state: 'visible', timeout: 2000 })
     }
 }
 
@@ -75,7 +75,7 @@ test.describe('Manage Entries', () => {
         // Reload to get fresh state after IndexedDB is cleared
         await page.reload()
         // Wait for initial sync to complete
-        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+        await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 2000 })
     })
 
     test.afterAll(async () => {
@@ -225,10 +225,10 @@ test.describe('Manage Entries', () => {
             const entry = await createEntry('Existing content here')
 
             await page.goto(`/entries/${entry.id}`)
-            await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 10000 })
+            await page.waitForFunction(() => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'), { timeout: 2000 })
 
             const editor = page.getByTestId('editor-content')
-            await expect(editor).toBeVisible({ timeout: 10000 })
+            await expect(editor).toBeVisible({ timeout: 2000 })
             await expect(editor).toContainText('Existing content here')
         })
 

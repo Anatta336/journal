@@ -6,7 +6,7 @@ There are three sets of automated tests in this project:
 - `npm run test:unit --prefix frontend`
 - `npm run test:e2e --prefix frontend`
 
-The end-to-end tests use Playwright and are by far the slowest to run because they interact with the app using a real browser.
+The end-to-end tests use Playwright and are by far the slowest to run because they interact with the app using a real browser. Although they're defined in the `frontend` directory they genuinely are end-to-end.
 
 To run a single test from one of the suites:
 ```bash
