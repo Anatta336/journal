@@ -94,7 +94,7 @@ export function useJournal() {
             id: e.id,
             creationDate: e.creationDate,
             lastUpdated: e.lastUpdated,
-            preview: e.content.slice(0, 30),
+            preview: e.content.slice(0, 1000), // Avoid loading huge amounts of content.
             syncStatus: e.syncStatus,
             tags: e.tags,
         }))

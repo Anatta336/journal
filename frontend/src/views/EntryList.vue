@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useJournal } from '@/composables/useJournal'
+import EntryPreview from '@/components/EntryPreview.vue'
 
 const router = useRouter()
 const { entryPreviews, isLoading, isSyncing, loadEntries, removeEntry } = useJournal()
@@ -169,6 +170,7 @@ onMounted(loadEntries)
                         <span class="entry-date">{{ formatDate(entry.creationDate) }}</span>
                         <span v-if="entry.syncStatus === 'pending'" class="sync-indicator" title="Pending sync">●</span>
                     </div>
+                    <EntryPreview :content="entry.preview" />
                     <div v-if="entry.tags && entry.tags.length > 0" class="entry-tags">
                         <span
                             v-for="tag in entry.tags"
@@ -328,11 +330,12 @@ onMounted(loadEntries)
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-sm);
-    transition: background-color 0.15s;
+    --preview-fade-color: var(--color-bg);
 }
 
 .entry-item:hover {
     background-color: var(--color-hover-bg);
+    --preview-fade-color: var(--color-hover-bg);
 }
 
 .entry-content {
