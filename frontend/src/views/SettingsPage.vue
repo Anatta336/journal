@@ -4,6 +4,7 @@ import { useJournal } from '@/composables/useJournal'
 
 const { syncNow, forceRefresh, isSyncing, lastSyncTime, isOnline, refreshProgress } = useJournal()
 
+const buildNumber = __BUILD_NUMBER__
 const storageUsed = ref<string>('')
 const syncResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const forceRefreshResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -147,6 +148,17 @@ onMounted(() => {
                 <span class="setting-label">Storage Used:</span>
                 <span class="setting-value" data-testid="storage-used">
                     {{ storageUsed }}
+                </span>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <h3>About</h3>
+
+            <div class="setting-row">
+                <span class="setting-label">Build Number:</span>
+                <span class="setting-value" data-testid="build-number">
+                    {{ buildNumber }}
                 </span>
             </div>
         </section>

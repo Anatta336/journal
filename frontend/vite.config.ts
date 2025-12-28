@@ -4,6 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+    define: {
+        __BUILD_NUMBER__: JSON.stringify(new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16) + 'Z')
+    },
     plugins: [
         vue(),
         VitePWA({
