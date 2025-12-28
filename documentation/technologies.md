@@ -12,6 +12,7 @@ The entire project is written in **TypeScript**, providing type safety across bo
 - **Vite** for development server and production builds
 - **Vue Router** for client-side routing
 - **Tiptap** (built on ProseMirror) for the WYSIWYG markdown editor
+- **marked** for rendering markdown
 - **idb** library for IndexedDB access
 
 ### Testing

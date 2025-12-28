@@ -37,6 +37,7 @@ Data flows through synchronization - the frontend maintains a complete local cop
 Detailed documentation for specific areas:
 
 - [Technologies](technologies.md) - Core technologies: TypeScript, Vue 3, Fastify, Tiptap
+- [Viewing](viewing.md) - Entry list, content previews, and filtering
 - [Editing](editing.md) - WYSIWYG editor and Markdown handling
 - [Frontmatter](frontmatter.md) - YAML metadata in entry files
 - [Sync](sync.md) - Synchronization protocol and conflict resolution

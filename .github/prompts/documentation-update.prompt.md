@@ -16,14 +16,12 @@ If there are files referenced in `overview.md` that do not yet exist, create the
 
 Avoid duplicating information between the documentation files, instead reference the relevant file.
 
-The documentation should focus on the "what" and "why" of the project, rather than the "how". Implementation details should be kept in the code itself, with comments as needed to explain any non-obvious parts.
+The documentation should focus on the "what" and "why" of the project, rather than the "how". Do not document implementation details, instead reference the code file where it is implemented. For example, documentation should mention if we show a preview of an email, but exactly how that preview is achieved should be left to the code itself.
 
 Documentation should include the user requirements that are being fulfilled.
 
 Documentation should include an explanation of what the end user experiences, and why certain design decisions were made.
 
-The documentation files can reference code files directly if needed for specifics.
+There are files in the `design/` directory which were created during the design and development of the project. However these may now be out of date. They are still a useful reference for understanding the project and requirements, but always check them against other documentation and the code itself to ensure accuracy.
 
-There are files in the `design/` directory that are created during the design and development of the project. However these may now be out of date. They are still a useful reference for understanding the project and requirements, but always check them against other documentation and the code itself.
-
-As part of updating the documentation if you find an area of functionality that is not covered by tests, please add or update tests as needed.
+As part of updating the documentation if you find an area of functionality that is not covered by tests, please add or update tests as needed. Cover as much as possible with smaller automated unit and feature tests, and use the slower end-to-end tests sparingly for high-level user flows.
