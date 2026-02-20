@@ -5,11 +5,8 @@
             "command": "npx",
             "args": [
                 "@playwright/mcp@latest",
-                "--extension"
+                "--browser=chromium"
             ],
-            "env": {
-                "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "JS7ytg9TKWLemfOb8gvF-lykNdz3iI_wcGZah14ukTc"
-            }
         }
     },
     "inputs": []

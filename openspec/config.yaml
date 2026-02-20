@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  Journal is a single-user personal journal and notes app. Entries are written in Markdown
+  and stored as .md files with YAML frontmatter on the backend. The frontend is a Vue 3 PWA
+  with full offline support.
+
+  Tech stack:
+  - Language: TypeScript (frontend and backend)
+  - Frontend: Vue 3 with Composition API and <script setup> syntax, Vite, Vue Router
+  - Editor: Tiptap (ProseMirror-based) WYSIWYG editor with Markdown serialization
+  - Local storage: IndexedDB via idb library
+  - Backend: Fastify with Zod validation
+  - File parsing: gray-matter for YAML frontmatter
+  - Testing: Vitest (unit), Playwright (E2E)
+
+  Conventions:
+  - 4 spaces for indentation in all file types
+  - <style scoped> in all Vue components
+  - CSS variables for colours, spacing, fonts
+  - No CSS frameworks or UI component libraries
+  - Target latest Chrome; prefer flexible layouts over media queries
+
+  Domain:
+  - Entries identified by UUID v4
+  - Dates stored as ISO 8601 UTC strings
+  - Tags: alphanumeric + hyphens, max 20 chars, case-insensitive for uniqueness
+  - Soft delete: entries moved to .trash/ directory; trashed flag in local DB
+  - Sync uses SHA-256 hashes for change detection
