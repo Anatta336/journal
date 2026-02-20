@@ -158,6 +158,10 @@ test.describe('Force Refresh', () => {
         // Update the entry on the server directly
         await updateEntry(entry.id, 'Updated server content')
 
+        // Block sync uploads so local "Modified local content" doesn't overwrite
+        // the server's "Updated server content" before force refresh runs
+        await page.route('**/api/sync/batch', (route) => route.abort())
+
         // Go back online
         await page.context().setOffline(false)
         await page.waitForTimeout(100)
@@ -172,6 +176,9 @@ test.describe('Force Refresh', () => {
 
         await page.getByTestId('force-refresh-btn').click()
         await expect(page.getByTestId('force-refresh-result')).toContainText('completed successfully')
+
+        // Unblock sync now that force refresh has overwritten local state
+        await page.unroute('**/api/sync/batch')
 
         // Navigate to entries and verify content was overwritten
         await page.goto('/entries')
@@ -197,11 +204,9 @@ test.describe('Force Refresh', () => {
         const editor = page.getByTestId('editor-content')
         await editor.click()
         await page.keyboard.type('Local only entry content')
-        await page.waitForTimeout(600)
 
-        // Save the entry (required to persist it locally)
-        await page.getByTestId('save-btn').click()
-        await page.waitForURL(/\/entries\/[a-f0-9-]+$/)
+        // Wait for auto-save to fire and navigate to the created entry
+        await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
 
         // Navigate back to list to see the entry (using the same page, no network request)
         await page.getByTestId('back-link').click()

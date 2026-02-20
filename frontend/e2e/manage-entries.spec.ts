@@ -169,51 +169,24 @@ test.describe('Manage Entries', () => {
     })
 
     test.describe('Create New Entry', () => {
-        test('Save button is disabled when content is empty', async ({ page }) => {
-            await page.goto('/entries/new')
-            await expect(page.getByTestId('save-btn')).toBeDisabled()
-        })
-
-        test('Save button is disabled when content is whitespace only', async ({ page }) => {
-            await page.goto('/entries/new')
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.type('   ')
-
-            await expect(page.getByTestId('save-btn')).toBeDisabled()
-        })
-
-        test('Save button is enabled when content has text', async ({ page }) => {
-            await page.goto('/entries/new')
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.type('My new entry')
-
-            await expect(page.getByTestId('save-btn')).toBeEnabled()
-        })
-
-        test('creates entry and redirects to edit page', async ({ page }) => {
+        test('creates entry and redirects to edit page after auto-save', async ({ page }) => {
             await page.goto('/entries/new')
 
             const editor = page.getByTestId('editor-content')
             await editor.click()
             await page.keyboard.type('New entry content')
 
-            await page.getByTestId('save-btn').click()
-
-            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+$/)
+            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
         })
 
-        test('new entry appears in the list', async ({ page }) => {
+        test('new entry appears in the list after auto-save', async ({ page }) => {
             await page.goto('/entries/new')
 
             const editor = page.getByTestId('editor-content')
             await editor.click()
             await page.keyboard.type('Brand new entry')
 
-            await page.getByTestId('save-btn').click()
+            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
             await page.getByTestId('back-link').click()
 
             await expect(page.getByTestId('entries-list').locator('li')).toHaveCount(1)
@@ -232,28 +205,7 @@ test.describe('Manage Entries', () => {
             await expect(editor).toContainText('Existing content here')
         })
 
-        test('Save button is disabled when no changes made', async ({ page }) => {
-            const entry = await createEntry('Original content')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            await expect(page.getByTestId('save-btn')).toBeDisabled()
-        })
-
-        test('Save button is enabled after making changes', async ({ page }) => {
-            const entry = await createEntry('Original content')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.press('End')
-            await page.keyboard.type(' with additions')
-
-            await expect(page.getByTestId('save-btn')).toBeEnabled()
-        })
-
-        test('shows Saved message after successful save', async ({ page }) => {
+        test('shows Last saved indicator after auto-save', async ({ page }) => {
             const entry = await createEntry('Original content')
 
             await page.goto(`/entries/${entry.id}`)
@@ -263,44 +215,10 @@ test.describe('Manage Entries', () => {
             await page.keyboard.press('End')
             await page.keyboard.type(' updated')
 
-            await page.getByTestId('save-btn').click()
-
-            await expect(page.getByTestId('save-success')).toBeVisible()
-            await expect(page.getByTestId('save-success')).toHaveText('Saved')
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
         })
 
-        test('Saved message disappears after 3 seconds', async ({ page }) => {
-            const entry = await createEntry('Original content')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.press('End')
-            await page.keyboard.type(' modified')
-
-            await page.getByTestId('save-btn').click()
-
-            await expect(page.getByTestId('save-success')).toBeVisible()
-            await expect(page.getByTestId('save-success')).not.toBeVisible({ timeout: 5000 })
-        })
-
-        test('Save button is disabled after saving', async ({ page }) => {
-            const entry = await createEntry('Original content')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.press('End')
-            await page.keyboard.type(' change')
-
-            await page.getByTestId('save-btn').click()
-
-            await expect(page.getByTestId('save-btn')).toBeDisabled()
-        })
-
-        test('content persists after save and refresh', async ({ page }) => {
+        test('content persists after auto-save and refresh', async ({ page }) => {
             const entry = await createEntry('Initial text')
 
             await page.goto(`/entries/${entry.id}`)
@@ -310,8 +228,7 @@ test.describe('Manage Entries', () => {
             await page.keyboard.press('End')
             await page.keyboard.type(' plus more')
 
-            await page.getByTestId('save-btn').click()
-            await expect(page.getByTestId('save-success')).toBeVisible()
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
 
             await page.reload()
 
@@ -319,8 +236,8 @@ test.describe('Manage Entries', () => {
         })
     })
 
-    test.describe('Unsaved Changes Warning', () => {
-        test('warns when navigating away with unsaved changes via router', async ({ page }) => {
+    test.describe('Navigation Without Confirmation', () => {
+        test('navigates away without dialog when entry has changes', async ({ page }) => {
             const entry = await createEntry('Original')
 
             await page.goto(`/entries/${entry.id}`)
@@ -332,33 +249,16 @@ test.describe('Manage Entries', () => {
             let dialogShown = false
             page.on('dialog', async dialog => {
                 dialogShown = true
-                expect(dialog.type()).toBe('confirm')
                 await dialog.dismiss()
             })
 
             await page.getByTestId('back-link').click()
 
-            expect(dialogShown).toBe(true)
-            await expect(page).toHaveURL(`/entries/${entry.id}`)
-        })
-
-        test('allows navigation if user confirms leaving', async ({ page }) => {
-            const entry = await createEntry('Original')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.type('New text')
-
-            page.on('dialog', dialog => dialog.accept())
-
-            await page.getByTestId('back-link').click()
-
+            expect(dialogShown).toBe(false)
             await expect(page).toHaveURL('/entries')
         })
 
-        test('no warning when navigating away without changes', async ({ page }) => {
+        test('navigates away without dialog when no changes made', async ({ page }) => {
             const entry = await createEntry('Content here')
 
             await page.goto(`/entries/${entry.id}`)
@@ -375,32 +275,7 @@ test.describe('Manage Entries', () => {
             await expect(page).toHaveURL('/entries')
         })
 
-        test('no warning after saving changes', async ({ page }) => {
-            const entry = await createEntry('Original')
-
-            await page.goto(`/entries/${entry.id}`)
-
-            const editor = page.getByTestId('editor-content')
-            await editor.click()
-            await page.keyboard.press('End')
-            await page.keyboard.type(' added')
-
-            await page.getByTestId('save-btn').click()
-            await expect(page.getByTestId('save-success')).toBeVisible()
-
-            let dialogShown = false
-            page.on('dialog', async dialog => {
-                dialogShown = true
-                await dialog.dismiss()
-            })
-
-            await page.getByTestId('back-link').click()
-
-            expect(dialogShown).toBe(false)
-            await expect(page).toHaveURL('/entries')
-        })
-
-        test('warns on new entry page with unsaved content', async ({ page }) => {
+        test('navigates away without dialog from new entry with content', async ({ page }) => {
             await page.goto('/entries/new')
 
             const editor = page.getByTestId('editor-content')
@@ -415,8 +290,8 @@ test.describe('Manage Entries', () => {
 
             await page.getByTestId('back-link').click()
 
-            expect(dialogShown).toBe(true)
-            await expect(page).toHaveURL('/entries/new')
+            expect(dialogShown).toBe(false)
+            await expect(page).toHaveURL('/entries')
         })
     })
 })

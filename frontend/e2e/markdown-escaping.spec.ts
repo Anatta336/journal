@@ -71,11 +71,8 @@ test.describe('Markdown Escaping', () => {
         // Verify it's displayed in the editor
         await expect(editor).toContainText('Here is a * test *.')
 
-        // Save the entry
-        await page.getByTestId('save-btn').click()
-
-        // Wait for navigation to the entry page (assuming it redirects to /entries/:id)
-        await page.waitForURL(/\/entries\/[a-f0-9-]+/)
+        // Wait for auto-save to fire and navigate to the created entry
+        await page.waitForURL(/\/entries\/[a-f0-9-]+/, { timeout: 5000 })
 
         // Verify it's still displayed correctly after saving and reloading
         await expect(editor).toContainText('Here is a * test *.')

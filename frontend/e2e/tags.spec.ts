@@ -77,8 +77,7 @@ test.describe('Tags', () => {
             await editor.click()
             await page.keyboard.type('Work related entry')
 
-            await page.getByTestId('save-btn').click()
-            await page.waitForURL(/\/entries\/[a-f0-9-]+$/)
+            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
 
             await page.goto('/entries')
             await page.reload()
@@ -103,8 +102,7 @@ test.describe('Tags', () => {
             await editor.click()
             await page.keyboard.type('Multi-tag entry')
 
-            await page.getByTestId('save-btn').click()
-            await page.waitForURL(/\/entries\/[a-f0-9-]+$/)
+            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
         })
 
         test('prevents duplicate tags case-insensitively', async ({ page }) => {
@@ -180,8 +178,7 @@ test.describe('Tags', () => {
 
             await expect(page.getByTestId('selected-tag-new-tag')).toBeVisible()
 
-            await page.getByTestId('save-btn').click()
-            await expect(page.getByTestId('save-success')).toBeVisible()
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
 
             await page.reload()
             await expect(page.getByTestId('selected-tag-new-tag')).toBeVisible()
@@ -199,8 +196,7 @@ test.describe('Tags', () => {
 
             await expect(page.getByTestId('selected-tag-remove-me')).not.toBeVisible()
 
-            await page.getByTestId('save-btn').click()
-            await expect(page.getByTestId('save-success')).toBeVisible()
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
 
             await page.reload()
             await expect(page.getByTestId('selected-tag-remove-me')).not.toBeVisible()
@@ -222,8 +218,7 @@ test.describe('Tags', () => {
 
             await expect(page.getByTestId('selected-tag-new-tag')).toBeVisible()
 
-            await page.getByTestId('save-btn').click()
-            await expect(page.getByTestId('save-success')).toBeVisible()
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
 
             await page.waitForFunction(
                 () => !document.querySelector('[data-testid="sync-status"]')?.textContent?.includes('Syncing'),

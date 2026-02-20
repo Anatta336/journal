@@ -11,14 +11,16 @@ const { getEntry, saveNewEntry, saveExistingEntry, entryPreviews, loadEntries } 
 
 const editorRef = ref<InstanceType<typeof JournalEditor> | null>(null)
 const loading = ref(false)
-const saving = ref(false)
-const saveMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+const isSaving = ref(false)
+const lastSavedAt = ref<Date | null>(null)
+const saveError = ref(false)
 const originalContent = ref('')
 const currentContent = ref('')
 const originalTags = ref<string[]>([])
 const currentTags = ref<string[]>([])
-const hasUnsavedChanges = ref(false)
 const pendingContent = ref<string | null>(null)
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const tagInput = ref('')
 const showTagDropdown = ref(false)
@@ -26,6 +28,18 @@ const tagInputRef = ref<HTMLInputElement | null>(null)
 
 const isNewEntry = computed(() => route.name === 'entry-new')
 const entryId = computed(() => route.params.id as string | undefined)
+
+const lastSavedText = computed(() => {
+    if (isSaving.value) return 'Saving…'
+    if (saveError.value) return 'Save failed'
+    if (!lastSavedAt.value) return ''
+    return 'Last saved ' + lastSavedAt.value.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    })
+})
 
 const allExistingTags = computed(() => {
     const tagMap = new Map<string, string>()
@@ -88,12 +102,21 @@ const canCreateTag = computed(() => {
     return !filteredTags.value.some((t) => t.toLowerCase() === input.toLowerCase())
 })
 
+function scheduleAutoSave() {
+    if (currentContent.value.trim() === '') return
+    if (debounceTimer !== null) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        save()
+    }, 1000)
+}
+
 function addTag(tag: string) {
     const existingCasing = getExistingTagCasing(tag)
     const tagToAdd = existingCasing || tag
     if (!hasTag(tagToAdd)) {
         currentTags.value = [...currentTags.value, tagToAdd]
-        checkUnsavedChanges()
+        scheduleAutoSave()
     }
     tagInput.value = ''
     showTagDropdown.value = false
@@ -101,7 +124,7 @@ function addTag(tag: string) {
 
 function removeTag(tag: string) {
     currentTags.value = currentTags.value.filter((t) => t.toLowerCase() !== tag.toLowerCase())
-    checkUnsavedChanges()
+    scheduleAutoSave()
 }
 
 function handleTagInputKeydown(event: KeyboardEvent) {
@@ -135,28 +158,11 @@ function handleTagInputBlur() {
     }, 150)
 }
 
-function checkUnsavedChanges() {
-    const contentChanged = currentContent.value.trim() !== originalContent.value.trim()
-    const tagsChanged = JSON.stringify([...currentTags.value].sort()) !== JSON.stringify([...originalTags.value].sort())
-    hasUnsavedChanges.value = contentChanged || tagsChanged
-}
-
-const isSaveDisabled = computed(() => {
-    const trimmedContent = currentContent.value.trim()
-    if (trimmedContent === '') return true
-    if (!isNewEntry.value) {
-        const contentSame = trimmedContent === originalContent.value.trim()
-        const tagsSame = JSON.stringify([...currentTags.value].sort()) === JSON.stringify([...originalTags.value].sort())
-        if (contentSame && tagsSame) return true
-    }
-    return false
-})
-
 function updateCurrentContent() {
     if (editorRef.value) {
         const markdown = editorRef.value.getMarkdown()
         currentContent.value = markdown
-        checkUnsavedChanges()
+        scheduleAutoSave()
     }
 }
 
@@ -197,13 +203,16 @@ async function fetchEntry() {
     }
 }
 
-async function save() {
-    updateCurrentContent()
+async function save(skipNavigation = false) {
+    if (isSaving.value) return
+    if (editorRef.value) {
+        currentContent.value = editorRef.value.getMarkdown()
+    }
     const content = currentContent.value.trim()
     if (!content) return
 
-    saving.value = true
-    saveMessage.value = null
+    isSaving.value = true
+    saveError.value = false
 
     try {
         const tagsToSave = currentTags.value.length > 0 ? [...currentTags.value] : undefined
@@ -211,42 +220,56 @@ async function save() {
             const entry = await saveNewEntry(content, tagsToSave)
             originalContent.value = content
             originalTags.value = currentTags.value.slice()
-            hasUnsavedChanges.value = false
-            router.push(`/entries/${entry.id}`)
+            lastSavedAt.value = new Date()
+            if (!skipNavigation) {
+                router.push(`/entries/${entry.id}`)
+            }
         } else if (entryId.value) {
             await saveExistingEntry(entryId.value, content, tagsToSave)
             originalContent.value = content
             originalTags.value = currentTags.value.slice()
-            hasUnsavedChanges.value = false
-            saveMessage.value = { type: 'success', text: 'Saved' }
-            setTimeout(() => {
-                if (saveMessage.value?.type === 'success') {
-                    saveMessage.value = null
-                }
-            }, 3000)
+            lastSavedAt.value = new Date()
         }
     } catch (error) {
         console.error('Failed to save entry:', error)
-        saveMessage.value = { type: 'error', text: 'Failed to save entry' }
+        saveError.value = true
     } finally {
-        saving.value = false
+        isSaving.value = false
     }
 }
 
-function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (hasUnsavedChanges.value) {
-        event.preventDefault()
+function handleVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+        save()
     }
 }
 
-onBeforeRouteLeave(() => {
-    if (hasUnsavedChanges.value) {
-        return confirm('You have unsaved changes. Are you sure you want to leave?')
+function handleBeforeUnload() {
+    save()
+}
+
+onBeforeRouteLeave(async () => {
+    if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
     }
+    if (isNewEntry.value && currentContent.value.trim() === '') {
+        return true
+    }
+    // Skip if nothing has changed since the last save (avoids double-save when
+    // auto-save triggers navigation and this guard fires for that same navigation)
+    const currentMarkdown = editorRef.value ? editorRef.value.getMarkdown().trim() : currentContent.value.trim()
+    const contentSame = currentMarkdown === originalContent.value.trim()
+    const tagsSame = JSON.stringify([...currentTags.value].sort()) === JSON.stringify([...originalTags.value].sort())
+    if (contentSame && tagsSame) {
+        return true
+    }
+    await save(true)
     return true
 })
 
 onMounted(async () => {
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
     await loadEntries()
     if (!isNewEntry.value) {
@@ -255,6 +278,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+    if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+    }
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
     window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
@@ -341,21 +369,10 @@ watch(editorRef, (editor) => {
             />
 
             <div class="editor-footer">
-                <button
-                    class="save-btn"
-                    :disabled="isSaveDisabled || saving"
-                    @click="save"
-                    data-testid="save-btn"
-                >
-                    {{ saving ? 'Saving...' : 'Save' }}
-                </button>
                 <span
-                    v-if="saveMessage"
-                    :class="['save-message', saveMessage.type]"
-                    :data-testid="saveMessage.type === 'success' ? 'save-success' : 'save-error'"
-                >
-                    {{ saveMessage.text }}
-                </span>
+                    :class="['save-indicator', { error: saveError }]"
+                    data-testid="save-indicator"
+                >{{ lastSavedText }}</span>
             </div>
         </template>
     </div>
@@ -489,34 +506,14 @@ watch(editorRef, (editor) => {
     gap: var(--spacing-md);
 }
 
-.save-btn {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    background-color: var(--color-primary);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-size: var(--font-size-base);
-}
-
-.save-btn:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-}
-
-.save-btn:disabled {
+.save-indicator {
+    font-size: 0.75rem;
     opacity: 0.5;
-    cursor: not-allowed;
+    color: var(--color-text);
 }
 
-.save-message {
-    font-size: 0.875rem;
-}
-
-.save-message.success {
-    color: #16a34a;
-}
-
-.save-message.error {
-    color: #dc2626;
+.save-indicator.error {
+    color: var(--color-danger, #dc2626);
+    opacity: 1;
 }
 </style>
