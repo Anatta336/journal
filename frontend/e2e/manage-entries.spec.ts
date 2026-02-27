@@ -117,10 +117,10 @@ test.describe('Manage Entries', () => {
             expect(dateText).toMatch(/\d{2}\/[A-Z][a-z]{2}\/\d{4}/)
         })
 
-        test('clicking New Entry navigates to /entries/new', async ({ page }) => {
+        test('clicking New Entry creates an entry and navigates to /entries/:id', async ({ page }) => {
             await page.goto('/entries')
             await page.getByTestId('new-entry-btn').click()
-            await expect(page).toHaveURL('/entries/new')
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
         })
 
         test('clicking an entry navigates to edit page', async ({ page }) => {
@@ -169,24 +169,28 @@ test.describe('Manage Entries', () => {
     })
 
     test.describe('Create New Entry', () => {
-        test('creates entry and redirects to edit page after auto-save', async ({ page }) => {
-            await page.goto('/entries/new')
+        test('creates entry and saves after typing content', async ({ page }) => {
+            await page.goto('/entries')
+            await page.getByTestId('new-entry-btn').click()
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
 
             const editor = page.getByTestId('editor-content')
             await editor.click()
             await page.keyboard.type('New entry content')
 
-            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
         })
 
-        test('new entry appears in the list after auto-save', async ({ page }) => {
-            await page.goto('/entries/new')
+        test('new entry appears in the list after saving', async ({ page }) => {
+            await page.goto('/entries')
+            await page.getByTestId('new-entry-btn').click()
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
 
             const editor = page.getByTestId('editor-content')
             await editor.click()
             await page.keyboard.type('Brand new entry')
 
-            await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
+            await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
             await page.getByTestId('back-link').click()
 
             await expect(page.getByTestId('entries-list').locator('li')).toHaveCount(1)
@@ -276,7 +280,9 @@ test.describe('Manage Entries', () => {
         })
 
         test('navigates away without dialog from new entry with content', async ({ page }) => {
-            await page.goto('/entries/new')
+            await page.goto('/entries')
+            await page.getByTestId('new-entry-btn').click()
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
 
             const editor = page.getByTestId('editor-content')
             await editor.click()
@@ -292,6 +298,35 @@ test.describe('Manage Entries', () => {
 
             expect(dialogShown).toBe(false)
             await expect(page).toHaveURL('/entries')
+        })
+    })
+
+    test.describe('New Entry Auto-Delete', () => {
+        test('navigating away from new entry with no content removes it from the list', async ({ page }) => {
+            await page.goto('/entries')
+            await page.getByTestId('new-entry-btn').click()
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
+
+            await page.getByTestId('back-link').click()
+            await expect(page).toHaveURL('/entries')
+
+            await expect(page.getByText('No journal entries yet')).toBeVisible({ timeout: 3000 })
+        })
+
+        test('navigating away from new entry with tags but no content keeps the entry', async ({ page }) => {
+            await page.goto('/entries')
+            await page.getByTestId('new-entry-btn').click()
+            await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
+
+            const tagInput = page.getByTestId('tag-input')
+            await tagInput.click()
+            await tagInput.fill('mytag')
+            await page.keyboard.press('Enter')
+
+            await page.getByTestId('back-link').click()
+            await expect(page).toHaveURL('/entries')
+
+            await expect(page.getByTestId('entries-list').locator('li')).toHaveCount(1, { timeout: 3000 })
         })
     })
 })

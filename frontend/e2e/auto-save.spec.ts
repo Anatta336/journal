@@ -46,22 +46,22 @@ test.describe('Auto-save', () => {
         await deleteAllEntries()
     })
 
-    test('save indicator shows Last saved after typing and waiting ~1.1s', async ({ page }) => {
-        await page.goto('/entries/new')
+    test('save indicator shows Last saved after typing', async ({ page }) => {
+        await page.goto('/entries')
+        await page.getByTestId('new-entry-btn').click()
+        await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
 
         const editor = page.getByTestId('editor-content')
         await editor.click()
         await page.keyboard.type('Auto-save test entry')
 
-        // Wait for auto-save to fire (debounce 1s + save time) and navigate
-        await page.waitForURL(/\/entries\/[a-f0-9-]+$/, { timeout: 5000 })
-
-        // On the edit page the indicator should show Last saved
-        await expect(page.getByTestId('save-indicator')).toContainText('Last saved')
+        await expect(page.getByTestId('save-indicator')).toContainText('Last saved', { timeout: 5000 })
     })
 
     test('navigating away immediately saves entry without a confirmation dialog', async ({ page }) => {
-        await page.goto('/entries/new')
+        await page.goto('/entries')
+        await page.getByTestId('new-entry-btn').click()
+        await expect(page).toHaveURL(/\/entries\/[a-f0-9-]+\?new=1$/, { timeout: 5000 })
 
         const editor = page.getByTestId('editor-content')
         await editor.click()

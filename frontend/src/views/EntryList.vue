@@ -5,7 +5,7 @@ import { useJournal } from '@/composables/useJournal'
 import EntryPreview from '@/components/EntryPreview.vue'
 
 const router = useRouter()
-const { entryPreviews, isLoading, isSyncing, loadEntries, removeEntry } = useJournal()
+const { entryPreviews, isLoading, isSyncing, loadEntries, removeEntry, saveNewEntry } = useJournal()
 const deleteErrors = ref<Record<string, string>>({})
 const showFilters = ref(false)
 const selectedTags = ref<Set<string>>(new Set())
@@ -96,8 +96,9 @@ function navigateToEntry(id: string) {
     router.push(`/entries/${id}`)
 }
 
-function navigateToNew() {
-    router.push('/entries/new')
+async function createAndNavigateToNew() {
+    const entry = await saveNewEntry('', undefined)
+    router.push(`/entries/${entry.id}?new=1`)
 }
 
 onMounted(loadEntries)
@@ -107,7 +108,7 @@ onMounted(loadEntries)
     <div class="entry-list">
         <div class="list-header">
             <h2>Journal Entries</h2>
-            <button class="new-entry-btn" @click="navigateToNew" data-testid="new-entry-btn">
+            <button class="new-entry-btn" @click="createAndNavigateToNew" data-testid="new-entry-btn">
                 New Entry
             </button>
         </div>

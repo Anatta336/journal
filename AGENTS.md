@@ -22,15 +22,11 @@ A journal app for a single user to manage journal entries in the form of Markdow
 
 ## Documentation
 
-The documentation is in the `documentation/` directory. Start from `documentation/overview.md` which gives a high-level overview of the project and links to other documentation files.
-
-When you make changes to the project ensure that the documentation is kept up to date. Update existing files as needed, and create new files for any new features or area.
-
-The documentation should focus on the "what" and "why" of the project, rather than the "how". Implementation details should be kept in the code itself, with comments as needed to explain any non-obvious parts.
+Functionality requirements are defined using OpenSpec.
 
 ## Development Guidelines
 
-Assume the dev servers for both frontend and backend are already running. Only start them yourself after you have confirmed they're not running and the relevant ports are free.
+Assume the dev servers for both frontend and backend are already running. Only start them yourself after you have confirmed they're not running and the relevant ports are free. Both servers need to be running at the same time, so if you are starting servers yourself make sure they run in the background so they are not interrupted by your other terminal operations.
 
 ### Frontend
 
@@ -66,6 +62,8 @@ Only use comments if they add meaningful information - if a comment repeats what
 ### Code style
 
 Use 4 spaces for indenting in all types of file. Update the indentation of any existing code that doesn't match this.
+
+Do use semicolons to end lines in TypeScript (including in Vue components). Update existing code which is missing semicolons.
 
 ### Styling
 

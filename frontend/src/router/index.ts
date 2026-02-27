@@ -16,11 +16,6 @@ const router = createRouter({
             component: EntryList,
         },
         {
-            path: '/entries/new',
-            name: 'entry-new',
-            component: EntryEditorPage,
-        },
-        {
             path: '/entries/:id',
             name: 'entry-edit',
             component: EntryEditorPage,

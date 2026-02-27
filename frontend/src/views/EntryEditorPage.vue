@@ -7,7 +7,7 @@ import { sync } from '@/services/sync'
 
 const route = useRoute()
 const router = useRouter()
-const { getEntry, saveNewEntry, saveExistingEntry, entryPreviews, loadEntries } = useJournal()
+const { getEntry, saveExistingEntry, removeEntry, entryPreviews, loadEntries } = useJournal()
 
 const editorRef = ref<InstanceType<typeof JournalEditor> | null>(null)
 const loading = ref(false)
@@ -19,14 +19,14 @@ const currentContent = ref('')
 const originalTags = ref<string[]>([])
 const currentTags = ref<string[]>([])
 const pendingContent = ref<string | null>(null)
+const pendingFocus = ref(false)
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const tagInput = ref('')
 const showTagDropdown = ref(false)
-const tagInputRef = ref<HTMLInputElement | null>(null)
 
-const isNewEntry = computed(() => route.name === 'entry-new')
+const isNewlyCreated = computed(() => route.query.new === '1')
 const entryId = computed(() => route.params.id as string | undefined)
 
 const lastSavedText = computed(() => {
@@ -176,55 +176,49 @@ function setEditorContent(content: string) {
 }
 
 async function fetchEntry() {
-    if (!entryId.value) return
+    if (!entryId.value) return;
 
-    loading.value = true
+    loading.value = true;
     try {
-        let entry = await getEntry(entryId.value)
+        let entry = await getEntry(entryId.value);
         if (!entry) {
-            await sync()
-            entry = await getEntry(entryId.value)
+            await sync();
+            entry = await getEntry(entryId.value);
         }
         if (!entry) {
-            router.push('/entries')
-            return
+            router.push('/entries');
+            return;
         }
-        originalContent.value = entry.content
-        currentContent.value = entry.content
-        originalTags.value = entry.tags ? [...entry.tags] : []
-        currentTags.value = entry.tags ? [...entry.tags] : []
-        await nextTick()
-        setEditorContent(entry.content)
+        originalContent.value = entry.content;
+        currentContent.value = entry.content;
+        originalTags.value = entry.tags ? [...entry.tags] : [];
+        currentTags.value = entry.tags ? [...entry.tags] : [];
+        pendingFocus.value = isNewlyCreated.value;
+        await nextTick();
+        setEditorContent(entry.content);
+
     } catch (error) {
-        console.error('Failed to fetch entry:', error)
-        router.push('/entries')
+        console.error('Failed to fetch entry:', error);
+        router.push('/entries');
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 }
 
-async function save(skipNavigation = false) {
-    if (isSaving.value) return
+async function save() {
+    if (isSaving.value) return;
     if (editorRef.value) {
-        currentContent.value = editorRef.value.getMarkdown()
+        currentContent.value = editorRef.value.getMarkdown();
     }
-    const content = currentContent.value.trim()
-    if (!content) return
+    const content = currentContent.value.trim();
+    if (!content) return;
 
     isSaving.value = true
     saveError.value = false
 
     try {
         const tagsToSave = currentTags.value.length > 0 ? [...currentTags.value] : undefined
-        if (isNewEntry.value) {
-            const entry = await saveNewEntry(content, tagsToSave)
-            originalContent.value = content
-            originalTags.value = currentTags.value.slice()
-            lastSavedAt.value = new Date()
-            if (!skipNavigation) {
-                router.push(`/entries/${entry.id}`)
-            }
-        } else if (entryId.value) {
+        if (entryId.value) {
             await saveExistingEntry(entryId.value, content, tagsToSave)
             originalContent.value = content
             originalTags.value = currentTags.value.slice()
@@ -253,18 +247,33 @@ onBeforeRouteLeave(async () => {
         clearTimeout(debounceTimer)
         debounceTimer = null
     }
-    if (isNewEntry.value && currentContent.value.trim() === '') {
-        return true
+    if (isNewlyCreated.value) {
+        const hasContent = currentContent.value.trim() !== ''
+        const hasTags = currentTags.value.length > 0
+        if (!hasContent && !hasTags) {
+            try {
+                await removeEntry(entryId.value!)
+            } catch (error) {
+                console.error('Failed to delete empty new entry:', error)
+            }
+            return true
+        }
+        if (!hasContent && hasTags && entryId.value) {
+            try {
+                await saveExistingEntry(entryId.value, '', [...currentTags.value])
+            } catch (error) {
+                console.error('Failed to save tags for new entry:', error)
+            }
+            return true
+        }
     }
-    // Skip if nothing has changed since the last save (avoids double-save when
-    // auto-save triggers navigation and this guard fires for that same navigation)
     const currentMarkdown = editorRef.value ? editorRef.value.getMarkdown().trim() : currentContent.value.trim()
     const contentSame = currentMarkdown === originalContent.value.trim()
     const tagsSame = JSON.stringify([...currentTags.value].sort()) === JSON.stringify([...originalTags.value].sort())
     if (contentSame && tagsSame) {
         return true
     }
-    await save(true)
+    await save()
     return true
 })
 
@@ -272,9 +281,7 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
     await loadEntries()
-    if (!isNewEntry.value) {
-        fetchEntry()
-    }
+    fetchEntry()
 })
 
 onUnmounted(() => {
@@ -296,6 +303,10 @@ watch(editorRef, (editor) => {
     if (editor?.editor && pendingContent.value !== null) {
         editor.setMarkdown(pendingContent.value)
         pendingContent.value = null
+    }
+    if (editor?.editor && pendingFocus.value) {
+        pendingFocus.value = false
+        editor.editor.commands.focus()
     }
 })
 </script>
@@ -327,7 +338,6 @@ watch(editorRef, (editor) => {
                     </div>
                     <div class="tag-input-wrapper">
                         <input
-                            ref="tagInputRef"
                             type="text"
                             class="tag-input"
                             placeholder="Add tags..."
