@@ -1,114 +1,140 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useJournal } from '@/composables/useJournal'
-import EntryPreview from '@/components/EntryPreview.vue'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useJournal } from "@/composables/useJournal";
+import EntryPreview from "@/components/EntryPreview.vue";
 
-const router = useRouter()
-const { entryPreviews, isLoading, isSyncing, loadEntries, removeEntry, saveNewEntry } = useJournal()
-const deleteErrors = ref<Record<string, string>>({})
-const showFilters = ref(false)
-const selectedTags = ref<Set<string>>(new Set())
+const router = useRouter();
+const {
+    entryPreviews,
+    isLoading,
+    isSyncing,
+    loadEntries,
+    removeEntry,
+    saveNewEntry,
+} = useJournal();
+const deleteErrors = ref<Record<string, string>>({});
+const showFilters = ref(false);
+const selectedTags = ref<Set<string>>(new Set());
 
 const allTags = computed(() => {
-    const tagMap = new Map<string, string>()
+    const tagMap = new Map<string, string>();
     for (const entry of entryPreviews.value) {
         if (entry.tags) {
             for (const tag of entry.tags) {
-                const lowerTag = tag.toLowerCase()
+                const lowerTag = tag.toLowerCase();
                 if (!tagMap.has(lowerTag)) {
-                    tagMap.set(lowerTag, tag)
+                    tagMap.set(lowerTag, tag);
                 }
             }
         }
     }
-    return Array.from(tagMap.values()).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-})
+    return Array.from(tagMap.values()).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase()),
+    );
+});
 
-const hasActiveFilters = computed(() => selectedTags.value.size > 0)
+const hasActiveFilters = computed(() => selectedTags.value.size > 0);
 
 const filteredEntries = computed(() => {
     if (selectedTags.value.size === 0) {
-        return entryPreviews.value
+        return entryPreviews.value;
     }
     return entryPreviews.value.filter((entry) => {
-        if (!entry.tags || entry.tags.length === 0) return false
-        const entryTagsLower = entry.tags.map((t) => t.toLowerCase())
+        if (!entry.tags || entry.tags.length === 0) return false;
+        const entryTagsLower = entry.tags.map((t) => t.toLowerCase());
         for (const selectedTag of selectedTags.value) {
             if (!entryTagsLower.includes(selectedTag.toLowerCase())) {
-                return false
+                return false;
             }
         }
-        return true
-    })
-})
+        return true;
+    });
+});
 
 function formatDate(isoDate: string): string {
-    const date = new Date(isoDate)
-    const day = date.getDate().toString().padStart(2, '0')
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const month = months[date.getMonth()]
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
+    const date = new Date(isoDate);
+    const day = date.getDate().toString().padStart(2, "0");
+    const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }
 
 function toggleFilter(tag: string) {
-    const lowerTag = tag.toLowerCase()
-    const newSelected = new Set(selectedTags.value)
-    let found = false
+    const lowerTag = tag.toLowerCase();
+    const newSelected = new Set(selectedTags.value);
+    let found = false;
     for (const t of newSelected) {
         if (t.toLowerCase() === lowerTag) {
-            newSelected.delete(t)
-            found = true
-            break
+            newSelected.delete(t);
+            found = true;
+            break;
         }
     }
     if (!found) {
-        newSelected.add(tag)
+        newSelected.add(tag);
     }
-    selectedTags.value = newSelected
+    selectedTags.value = newSelected;
 }
 
 function isTagSelected(tag: string): boolean {
-    const lowerTag = tag.toLowerCase()
+    const lowerTag = tag.toLowerCase();
     for (const t of selectedTags.value) {
-        if (t.toLowerCase() === lowerTag) return true
+        if (t.toLowerCase() === lowerTag) return true;
     }
-    return false
+    return false;
 }
 
 function clearFilters() {
-    selectedTags.value = new Set()
+    selectedTags.value = new Set();
 }
 
 async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this entry?')) return
+    if (!confirm("Are you sure you want to delete this entry?")) return;
 
-    deleteErrors.value[id] = ''
+    deleteErrors.value[id] = "";
     try {
-        await removeEntry(id)
+        await removeEntry(id);
     } catch {
-        deleteErrors.value[id] = 'Failed to delete entry'
+        deleteErrors.value[id] = "Failed to delete entry";
     }
 }
 
 function navigateToEntry(id: string) {
-    router.push(`/entries/${id}`)
+    router.push(`/entries/${id}`);
 }
 
 async function createAndNavigateToNew() {
-    const entry = await saveNewEntry('', undefined)
-    router.push(`/entries/${entry.id}?new=1`)
+    const entry = await saveNewEntry("", undefined);
+    router.push(`/entries/${entry.id}?new=1`);
 }
 
-onMounted(loadEntries)
+onMounted(loadEntries);
 </script>
 
 <template>
     <div class="entry-list">
         <div class="list-header">
             <h2>Journal Entries</h2>
-            <button class="new-entry-btn" @click="createAndNavigateToNew" data-testid="new-entry-btn">
+            <button
+                class="new-entry-btn"
+                @click="createAndNavigateToNew"
+                data-testid="new-entry-btn"
+            >
                 New Entry
             </button>
         </div>
@@ -120,9 +146,13 @@ onMounted(loadEntries)
                 @click="showFilters = !showFilters"
                 data-testid="filter-toggle-btn"
             >
-                Filters{{ hasActiveFilters ? ` (${selectedTags.size})` : '' }}
+                Filters{{ hasActiveFilters ? ` (${selectedTags.size})` : "" }}
             </button>
-            <div v-if="showFilters" class="filter-panel" data-testid="filter-panel">
+            <div
+                v-if="showFilters"
+                class="filter-panel"
+                data-testid="filter-panel"
+            >
                 <button
                     v-if="hasActiveFilters"
                     class="clear-filters-btn"
@@ -160,7 +190,8 @@ onMounted(loadEntries)
         </div>
 
         <ul v-else class="entries" data-testid="entries-list">
-            <li v-for="entry in filteredEntries"
+            <li
+                v-for="entry in filteredEntries"
                 :key="entry.id"
                 class="entry-item"
                 @click="navigateToEntry(entry.id)"
@@ -168,11 +199,21 @@ onMounted(loadEntries)
             >
                 <div class="entry-content">
                     <div class="entry-header">
-                        <span class="entry-date">{{ formatDate(entry.creationDate) }}</span>
-                        <span v-if="entry.syncStatus === 'pending'" class="sync-indicator" title="Pending sync">●</span>
+                        <span class="entry-date">{{
+                            formatDate(entry.creationDate)
+                        }}</span>
+                        <span
+                            v-if="entry.syncStatus === 'pending'"
+                            class="sync-indicator"
+                            title="Pending sync"
+                            >●</span
+                        >
                     </div>
                     <EntryPreview :content="entry.preview" />
-                    <div v-if="entry.tags && entry.tags.length > 0" class="entry-tags">
+                    <div
+                        v-if="entry.tags && entry.tags.length > 0"
+                        class="entry-tags"
+                    >
                         <span
                             v-for="tag in entry.tags"
                             :key="tag"
@@ -294,7 +335,9 @@ onMounted(loadEntries)
     cursor: pointer;
     font-size: 0.875rem;
     opacity: 0.6;
-    transition: opacity 0.15s, border-color 0.15s;
+    transition:
+        opacity 0.15s,
+        border-color 0.15s;
 }
 
 .filter-tag:hover {

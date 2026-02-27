@@ -1,177 +1,185 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import JournalEditor from '@/components/JournalEditor.vue'
-import { useJournal } from '@/composables/useJournal'
-import { sync } from '@/services/sync'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
+import JournalEditor from "@/components/JournalEditor.vue";
+import { useJournal } from "@/composables/useJournal";
+import { sync } from "@/services/sync";
 
-const route = useRoute()
-const router = useRouter()
-const { getEntry, saveExistingEntry, removeEntry, entryPreviews, loadEntries } = useJournal()
+const route = useRoute();
+const router = useRouter();
+const { getEntry, saveExistingEntry, removeEntry, entryPreviews, loadEntries } =
+    useJournal();
 
-const editorRef = ref<InstanceType<typeof JournalEditor> | null>(null)
-const loading = ref(false)
-const isSaving = ref(false)
-const lastSavedAt = ref<Date | null>(null)
-const saveError = ref(false)
-const originalContent = ref('')
-const currentContent = ref('')
-const originalTags = ref<string[]>([])
-const currentTags = ref<string[]>([])
-const pendingContent = ref<string | null>(null)
-const pendingFocus = ref(false)
+const editorRef = ref<InstanceType<typeof JournalEditor> | null>(null);
+const loading = ref(false);
+const isSaving = ref(false);
+const lastSavedAt = ref<Date | null>(null);
+const saveError = ref(false);
+const originalContent = ref("");
+const currentContent = ref("");
+const originalTags = ref<string[]>([]);
+const currentTags = ref<string[]>([]);
+const pendingContent = ref<string | null>(null);
+const pendingFocus = ref(false);
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const tagInput = ref('')
-const showTagDropdown = ref(false)
+const tagInput = ref("");
+const showTagDropdown = ref(false);
 
-const isNewlyCreated = computed(() => route.query.new === '1')
-const entryId = computed(() => route.params.id as string | undefined)
+const isNewlyCreated = computed(() => route.query.new === "1");
+const entryId = computed(() => route.params.id as string | undefined);
 
 const lastSavedText = computed(() => {
-    if (isSaving.value) return 'Saving…'
-    if (saveError.value) return 'Save failed'
-    if (!lastSavedAt.value) return ''
-    return 'Last saved ' + lastSavedAt.value.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    })
-})
+    if (isSaving.value) return "Saving…";
+    if (saveError.value) return "Save failed";
+    if (!lastSavedAt.value) return "";
+    return (
+        "Last saved " +
+        lastSavedAt.value.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+        })
+    );
+});
 
 const allExistingTags = computed(() => {
-    const tagMap = new Map<string, string>()
+    const tagMap = new Map<string, string>();
     for (const entry of entryPreviews.value) {
         if (entry.tags) {
             for (const tag of entry.tags) {
-                const lowerTag = tag.toLowerCase()
+                const lowerTag = tag.toLowerCase();
                 if (!tagMap.has(lowerTag)) {
-                    tagMap.set(lowerTag, tag)
+                    tagMap.set(lowerTag, tag);
                 }
             }
         }
     }
-    return Array.from(tagMap.values())
-})
+    return Array.from(tagMap.values());
+});
 
-const tagValidationRegex = /^[a-zA-Z0-9-]+$/
+const tagValidationRegex = /^[a-zA-Z0-9-]+$/;
 
 function isValidTag(tag: string): boolean {
-    return tag.length >= 1 && tag.length <= 20 && tagValidationRegex.test(tag)
+    return tag.length >= 1 && tag.length <= 20 && tagValidationRegex.test(tag);
 }
 
 function normalizeTagInput(input: string): string {
-    return input.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20)
+    return input.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 20);
 }
 
 function hasTag(tag: string): boolean {
-    const lowerTag = tag.toLowerCase()
-    return currentTags.value.some((t) => t.toLowerCase() === lowerTag)
+    const lowerTag = tag.toLowerCase();
+    return currentTags.value.some((t) => t.toLowerCase() === lowerTag);
 }
 
 function getExistingTagCasing(tag: string): string | null {
-    const lowerTag = tag.toLowerCase()
+    const lowerTag = tag.toLowerCase();
     for (const existingTag of allExistingTags.value) {
         if (existingTag.toLowerCase() === lowerTag) {
-            return existingTag
+            return existingTag;
         }
     }
-    return null
+    return null;
 }
 
 const filteredTags = computed(() => {
-    const search = tagInput.value.toLowerCase()
+    const search = tagInput.value.toLowerCase();
     if (!search) {
-        return allExistingTags.value.filter((t) => !hasTag(t))
+        return allExistingTags.value.filter((t) => !hasTag(t));
     }
     return allExistingTags.value.filter(
-        (t) => t.toLowerCase().includes(search) && !hasTag(t)
-    )
-})
+        (t) => t.toLowerCase().includes(search) && !hasTag(t),
+    );
+});
 
 const canCreateTag = computed(() => {
-    const input = tagInput.value.trim()
-    if (!input || !isValidTag(input)) return false
-    if (hasTag(input)) return false
-    const existingMatch = getExistingTagCasing(input)
+    const input = tagInput.value.trim();
+    if (!input || !isValidTag(input)) return false;
+    if (hasTag(input)) return false;
+    const existingMatch = getExistingTagCasing(input);
     if (existingMatch && !hasTag(existingMatch)) {
-        return false
+        return false;
     }
-    return !filteredTags.value.some((t) => t.toLowerCase() === input.toLowerCase())
-})
+    return !filteredTags.value.some(
+        (t) => t.toLowerCase() === input.toLowerCase(),
+    );
+});
 
 function scheduleAutoSave() {
-    if (currentContent.value.trim() === '') return
-    if (debounceTimer !== null) clearTimeout(debounceTimer)
+    if (currentContent.value.trim() === "") return;
+    if (debounceTimer !== null) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-        debounceTimer = null
-        save()
-    }, 1000)
+        debounceTimer = null;
+        save();
+    }, 1000);
 }
 
 function addTag(tag: string) {
-    const existingCasing = getExistingTagCasing(tag)
-    const tagToAdd = existingCasing || tag
+    const existingCasing = getExistingTagCasing(tag);
+    const tagToAdd = existingCasing || tag;
     if (!hasTag(tagToAdd)) {
-        currentTags.value = [...currentTags.value, tagToAdd]
-        scheduleAutoSave()
+        currentTags.value = [...currentTags.value, tagToAdd];
+        scheduleAutoSave();
     }
-    tagInput.value = ''
-    showTagDropdown.value = false
+    tagInput.value = "";
+    showTagDropdown.value = false;
 }
 
 function removeTag(tag: string) {
-    currentTags.value = currentTags.value.filter((t) => t.toLowerCase() !== tag.toLowerCase())
-    scheduleAutoSave()
+    currentTags.value = currentTags.value.filter(
+        (t) => t.toLowerCase() !== tag.toLowerCase(),
+    );
+    scheduleAutoSave();
 }
 
 function handleTagInputKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-        event.preventDefault()
-        const input = tagInput.value.trim()
+    if (event.key === "Enter") {
+        event.preventDefault();
+        const input = tagInput.value.trim();
         if (filteredTags.value.length > 0) {
-            addTag(filteredTags.value[0])
+            addTag(filteredTags.value[0]);
         } else if (canCreateTag.value) {
-            addTag(input)
+            addTag(input);
         }
-    } else if (event.key === 'Escape') {
-        showTagDropdown.value = false
-        tagInput.value = ''
+    } else if (event.key === "Escape") {
+        showTagDropdown.value = false;
+        tagInput.value = "";
     }
 }
 
 function handleTagInput(event: Event) {
-    const input = event.target as HTMLInputElement
-    tagInput.value = normalizeTagInput(input.value)
-    showTagDropdown.value = true
+    const input = event.target as HTMLInputElement;
+    tagInput.value = normalizeTagInput(input.value);
+    showTagDropdown.value = true;
 }
 
 function handleTagInputFocus() {
-    showTagDropdown.value = true
+    showTagDropdown.value = true;
 }
 
 function handleTagInputBlur() {
     setTimeout(() => {
-        showTagDropdown.value = false
-    }, 150)
+        showTagDropdown.value = false;
+    }, 150);
 }
 
 function updateCurrentContent() {
     if (editorRef.value) {
-        const markdown = editorRef.value.getMarkdown()
-        currentContent.value = markdown
-        scheduleAutoSave()
+        const markdown = editorRef.value.getMarkdown();
+        currentContent.value = markdown;
+        scheduleAutoSave();
     }
 }
 
 function setEditorContent(content: string) {
     if (editorRef.value?.editor) {
-        editorRef.value.setMarkdown(content)
-        pendingContent.value = null
+        editorRef.value.setMarkdown(content);
+        pendingContent.value = null;
     } else {
-        pendingContent.value = content
+        pendingContent.value = content;
     }
 }
 
@@ -186,7 +194,7 @@ async function fetchEntry() {
             entry = await getEntry(entryId.value);
         }
         if (!entry) {
-            router.push('/entries');
+            router.push("/entries");
             return;
         }
         originalContent.value = entry.content;
@@ -196,10 +204,9 @@ async function fetchEntry() {
         pendingFocus.value = isNewlyCreated.value;
         await nextTick();
         setEditorContent(entry.content);
-
     } catch (error) {
-        console.error('Failed to fetch entry:', error);
-        router.push('/entries');
+        console.error("Failed to fetch entry:", error);
+        router.push("/entries");
     } finally {
         loading.value = false;
     }
@@ -213,102 +220,112 @@ async function save() {
     const content = currentContent.value.trim();
     if (!content) return;
 
-    isSaving.value = true
-    saveError.value = false
+    isSaving.value = true;
+    saveError.value = false;
 
     try {
-        const tagsToSave = currentTags.value.length > 0 ? [...currentTags.value] : undefined
+        const tagsToSave =
+            currentTags.value.length > 0 ? [...currentTags.value] : undefined;
         if (entryId.value) {
-            await saveExistingEntry(entryId.value, content, tagsToSave)
-            originalContent.value = content
-            originalTags.value = currentTags.value.slice()
-            lastSavedAt.value = new Date()
+            await saveExistingEntry(entryId.value, content, tagsToSave);
+            originalContent.value = content;
+            originalTags.value = currentTags.value.slice();
+            lastSavedAt.value = new Date();
         }
     } catch (error) {
-        console.error('Failed to save entry:', error)
-        saveError.value = true
+        console.error("Failed to save entry:", error);
+        saveError.value = true;
     } finally {
-        isSaving.value = false
+        isSaving.value = false;
     }
 }
 
 function handleVisibilityChange() {
-    if (document.visibilityState === 'hidden') {
-        save()
+    if (document.visibilityState === "hidden") {
+        save();
     }
 }
 
 function handleBeforeUnload() {
-    save()
+    save();
 }
 
 onBeforeRouteLeave(async () => {
     if (debounceTimer !== null) {
-        clearTimeout(debounceTimer)
-        debounceTimer = null
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
     }
     if (isNewlyCreated.value) {
-        const hasContent = currentContent.value.trim() !== ''
-        const hasTags = currentTags.value.length > 0
+        const hasContent = currentContent.value.trim() !== "";
+        const hasTags = currentTags.value.length > 0;
         if (!hasContent && !hasTags) {
             try {
-                await removeEntry(entryId.value!)
+                await removeEntry(entryId.value!);
             } catch (error) {
-                console.error('Failed to delete empty new entry:', error)
+                console.error("Failed to delete empty new entry:", error);
             }
-            return true
+            return true;
         }
         if (!hasContent && hasTags && entryId.value) {
             try {
-                await saveExistingEntry(entryId.value, '', [...currentTags.value])
+                await saveExistingEntry(entryId.value, "", [
+                    ...currentTags.value,
+                ]);
             } catch (error) {
-                console.error('Failed to save tags for new entry:', error)
+                console.error("Failed to save tags for new entry:", error);
             }
-            return true
+            return true;
         }
     }
-    const currentMarkdown = editorRef.value ? editorRef.value.getMarkdown().trim() : currentContent.value.trim()
-    const contentSame = currentMarkdown === originalContent.value.trim()
-    const tagsSame = JSON.stringify([...currentTags.value].sort()) === JSON.stringify([...originalTags.value].sort())
+    const currentMarkdown = editorRef.value
+        ? editorRef.value.getMarkdown().trim()
+        : currentContent.value.trim();
+    const contentSame = currentMarkdown === originalContent.value.trim();
+    const tagsSame =
+        JSON.stringify([...currentTags.value].sort()) ===
+        JSON.stringify([...originalTags.value].sort());
     if (contentSame && tagsSame) {
-        return true
+        return true;
     }
-    await save()
-    return true
-})
+    await save();
+    return true;
+});
 
 onMounted(async () => {
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    await loadEntries()
-    fetchEntry()
-})
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    await loadEntries();
+    fetchEntry();
+});
 
 onUnmounted(() => {
     if (debounceTimer !== null) {
-        clearTimeout(debounceTimer)
-        debounceTimer = null
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
     }
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-    window.removeEventListener('beforeunload', handleBeforeUnload)
-})
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+});
 
-watch(() => route.params.id, (newId: string | string[] | undefined) => {
-    if (newId) {
-        fetchEntry()
-    }
-})
+watch(
+    () => route.params.id,
+    (newId: string | string[] | undefined) => {
+        if (newId) {
+            fetchEntry();
+        }
+    },
+);
 
 watch(editorRef, (editor) => {
     if (editor?.editor && pendingContent.value !== null) {
-        editor.setMarkdown(pendingContent.value)
-        pendingContent.value = null
+        editor.setMarkdown(pendingContent.value);
+        pendingContent.value = null;
     }
     if (editor?.editor && pendingFocus.value) {
-        pendingFocus.value = false
-        editor.editor.commands.focus()
+        pendingFocus.value = false;
+        editor.editor.commands.focus();
     }
-})
+});
 </script>
 
 <template>
@@ -348,7 +365,14 @@ watch(editorRef, (editor) => {
                             @blur="handleTagInputBlur"
                             data-testid="tag-input"
                         />
-                        <div v-if="showTagDropdown && (filteredTags.length > 0 || canCreateTag)" class="tag-dropdown" data-testid="tag-dropdown">
+                        <div
+                            v-if="
+                                showTagDropdown &&
+                                (filteredTags.length > 0 || canCreateTag)
+                            "
+                            class="tag-dropdown"
+                            data-testid="tag-dropdown"
+                        >
                             <button
                                 v-for="tag in filteredTags"
                                 :key="tag"
@@ -373,16 +397,14 @@ watch(editorRef, (editor) => {
                 </div>
             </div>
 
-            <JournalEditor
-                ref="editorRef"
-                @update="updateCurrentContent"
-            />
+            <JournalEditor ref="editorRef" @update="updateCurrentContent" />
 
             <div class="editor-footer">
                 <span
                     :class="['save-indicator', { error: saveError }]"
                     data-testid="save-indicator"
-                >{{ lastSavedText }}</span>
+                    >{{ lastSavedText }}</span
+                >
             </div>
         </template>
     </div>

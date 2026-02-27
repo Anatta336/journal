@@ -25,10 +25,15 @@ async function cleanupTestDirectories() {
             if (entry.name === ".gitignore") continue;
             const fullPath = path.join(DATA_DIR, entry.name);
             if (entry.isDirectory() && entry.name === ".trash") {
-                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                const trashEntries = await fs.readdir(fullPath, {
+                    withFileTypes: true,
+                });
                 for (const trashEntry of trashEntries) {
                     if (trashEntry.name === ".gitignore") continue;
-                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                    await fs.rm(path.join(fullPath, trashEntry.name), {
+                        recursive: true,
+                        force: true,
+                    });
                 }
             } else {
                 await fs.rm(fullPath, { recursive: true, force: true });
@@ -54,8 +59,14 @@ describe("Storage Service", () => {
             await cleanupTestDirectories();
             await ensureStorageDirectories();
 
-            const entriesExists = await fs.stat(DATA_DIR).then(() => true).catch(() => false);
-            const trashExists = await fs.stat(TRASH_DIR).then(() => true).catch(() => false);
+            const entriesExists = await fs
+                .stat(DATA_DIR)
+                .then(() => true)
+                .catch(() => false);
+            const trashExists = await fs
+                .stat(TRASH_DIR)
+                .then(() => true)
+                .catch(() => false);
 
             expect(entriesExists).toBe(true);
             expect(trashExists).toBe(true);
@@ -69,7 +80,9 @@ describe("Storage Service", () => {
 
             expect(entry.id).toMatch(/^[0-9a-f-]{36}$/);
             expect(entry.content).toBe(content);
-            expect(entry.creationDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
+            expect(entry.creationDate).toMatch(
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+            );
             expect(entry.lastUpdated).toBe(entry.creationDate);
 
             const filePath = path.join(DATA_DIR, `${entry.id}.md`);
@@ -94,7 +107,9 @@ describe("Storage Service", () => {
 
     describe("getEntry", () => {
         it("should return null for non-existent entry", async () => {
-            const entry = await getEntry("00000000-0000-0000-0000-000000000000");
+            const entry = await getEntry(
+                "00000000-0000-0000-0000-000000000000",
+            );
             expect(entry).toBeNull();
         });
 
@@ -122,7 +137,9 @@ Content without creation date`;
             const entry = await getEntry(id);
 
             expect(entry).not.toBeNull();
-            expect(entry!.creationDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
+            expect(entry!.creationDate).toMatch(
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+            );
         });
     });
 
@@ -134,9 +151,9 @@ Content without creation date`;
 
         it("should return entries sorted by creationDate descending", async () => {
             const entry1 = await createEntry("First entry");
-            await new Promise(r => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 10));
             const entry2 = await createEntry("Second entry");
-            await new Promise(r => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 10));
             const entry3 = await createEntry("Third entry");
 
             const entries = await getAllEntries();
@@ -148,7 +165,8 @@ Content without creation date`;
         });
 
         it("should include preview of first 30 characters", async () => {
-            const content = "This is a very long journal entry that exceeds thirty characters for testing the preview feature.";
+            const content =
+                "This is a very long journal entry that exceeds thirty characters for testing the preview feature.";
             await createEntry(content);
 
             const entries = await getAllEntries();
@@ -161,7 +179,11 @@ Content without creation date`;
             await createEntry("Valid entry");
 
             const badFilePath = path.join(DATA_DIR, "bad-file.md");
-            await fs.writeFile(badFilePath, "---\ninvalid: yaml: ::::\n---\nContent", "utf-8");
+            await fs.writeFile(
+                badFilePath,
+                "---\ninvalid: yaml: ::::\n---\nContent",
+                "utf-8",
+            );
 
             const entries = await getAllEntries();
 
@@ -172,7 +194,7 @@ Content without creation date`;
     describe("updateEntry", () => {
         it("should update content and lastUpdated", async () => {
             const original = await createEntry("Original content");
-            await new Promise(r => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 10));
 
             const updated = await updateEntry(original.id, "Updated content");
 
@@ -180,12 +202,15 @@ Content without creation date`;
             expect(updated!.content).toBe("Updated content");
             expect(updated!.creationDate).toBe(original.creationDate);
             expect(new Date(updated!.lastUpdated).getTime()).toBeGreaterThan(
-                new Date(original.lastUpdated).getTime()
+                new Date(original.lastUpdated).getTime(),
             );
         });
 
         it("should return null for non-existent entry", async () => {
-            const result = await updateEntry("00000000-0000-0000-0000-000000000000", "New content");
+            const result = await updateEntry(
+                "00000000-0000-0000-0000-000000000000",
+                "New content",
+            );
             expect(result).toBeNull();
         });
     });
@@ -196,22 +221,33 @@ Content without creation date`;
             const originalPath = path.join(DATA_DIR, `${entry.id}.md`);
             const trashPath = path.join(TRASH_DIR, `${entry.id}.md`);
 
-            const originalExists = await fs.stat(originalPath).then(() => true).catch(() => false);
+            const originalExists = await fs
+                .stat(originalPath)
+                .then(() => true)
+                .catch(() => false);
             expect(originalExists).toBe(true);
 
             const deleted = await deleteEntry(entry.id);
 
             expect(deleted).toBe(true);
 
-            const stillExists = await fs.stat(originalPath).then(() => true).catch(() => false);
-            const inTrash = await fs.stat(trashPath).then(() => true).catch(() => false);
+            const stillExists = await fs
+                .stat(originalPath)
+                .then(() => true)
+                .catch(() => false);
+            const inTrash = await fs
+                .stat(trashPath)
+                .then(() => true)
+                .catch(() => false);
 
             expect(stillExists).toBe(false);
             expect(inTrash).toBe(true);
         });
 
         it("should return false for non-existent entry", async () => {
-            const result = await deleteEntry("00000000-0000-0000-0000-000000000000");
+            const result = await deleteEntry(
+                "00000000-0000-0000-0000-000000000000",
+            );
             expect(result).toBe(false);
         });
     });
@@ -372,7 +408,10 @@ Content without creation date`;
 
     describe("Tags", () => {
         it("should create entry with tags", async () => {
-            const entry = await createEntry("Entry with tags", ["work", "important"]);
+            const entry = await createEntry("Entry with tags", [
+                "work",
+                "important",
+            ]);
 
             expect(entry.tags).toEqual(["work", "important"]);
 
@@ -391,7 +430,9 @@ Content without creation date`;
 
         it("should update entry with tags", async () => {
             const original = await createEntry("Original content");
-            const updated = await updateEntry(original.id, "Updated content", ["new-tag"]);
+            const updated = await updateEntry(original.id, "Updated content", [
+                "new-tag",
+            ]);
 
             expect(updated!.tags).toEqual(["new-tag"]);
 
@@ -438,14 +479,18 @@ Content without creation date`;
         it("should return different hash when tags are added", () => {
             const content = "Test content";
             const hashWithoutTags = calculateEntryHash(content);
-            const hashWithTags = calculateEntryHash(content, { tags: ["work"] });
+            const hashWithTags = calculateEntryHash(content, {
+                tags: ["work"],
+            });
 
             expect(hashWithoutTags).not.toBe(hashWithTags);
         });
 
         it("should return different hash when tags are removed", () => {
             const content = "Test content";
-            const hashWithTags = calculateEntryHash(content, { tags: ["work"] });
+            const hashWithTags = calculateEntryHash(content, {
+                tags: ["work"],
+            });
             const hashWithoutTags = calculateEntryHash(content);
 
             expect(hashWithTags).not.toBe(hashWithoutTags);
@@ -463,7 +508,9 @@ Content without creation date`;
             const content = "Test content";
             const hashUndefined = calculateEntryHash(content);
             const hashEmpty = calculateEntryHash(content, { tags: [] });
-            const hashUndefinedExplicit = calculateEntryHash(content, { tags: undefined });
+            const hashUndefinedExplicit = calculateEntryHash(content, {
+                tags: undefined,
+            });
 
             expect(hashUndefined).toBe(hashEmpty);
             expect(hashUndefined).toBe(hashUndefinedExplicit);
@@ -471,9 +518,15 @@ Content without creation date`;
 
         it("should return same hash regardless of tag order", () => {
             const content = "Test content";
-            const hash1 = calculateEntryHash(content, { tags: ["work", "personal", "journal"] });
-            const hash2 = calculateEntryHash(content, { tags: ["journal", "work", "personal"] });
-            const hash3 = calculateEntryHash(content, { tags: ["personal", "journal", "work"] });
+            const hash1 = calculateEntryHash(content, {
+                tags: ["work", "personal", "journal"],
+            });
+            const hash2 = calculateEntryHash(content, {
+                tags: ["journal", "work", "personal"],
+            });
+            const hash3 = calculateEntryHash(content, {
+                tags: ["personal", "journal", "work"],
+            });
 
             expect(hash1).toBe(hash2);
             expect(hash1).toBe(hash3);

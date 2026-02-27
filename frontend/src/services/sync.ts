@@ -5,153 +5,172 @@ import {
     hardDeleteEntry,
     setSyncState,
     type LocalEntry,
-} from './db'
-import { calculateEntryHash, calculateGlobalHash } from '@/utils/hash'
+} from "./db";
+import { calculateEntryHash, calculateGlobalHash } from "@/utils/hash";
 
-const API_BASE = '/api'
+const API_BASE = "/api";
 
 interface ManifestEntry {
-    id: string
-    hash?: string
-    lastUpdated: string
+    id: string;
+    hash?: string;
+    lastUpdated: string;
 }
 
 interface ServerEntry {
-    id: string
-    content: string
-    creationDate: string
-    lastUpdated: string
-    hash?: string
-    tags?: string[]
+    id: string;
+    content: string;
+    creationDate: string;
+    lastUpdated: string;
+    hash?: string;
+    tags?: string[];
 }
 
-let isSyncing = false
-let syncListeners: Array<(syncing: boolean) => void> = []
-let currentSyncPromise: Promise<boolean> | null = null
+let isSyncing = false;
+let syncListeners: Array<(syncing: boolean) => void> = [];
+let currentSyncPromise: Promise<boolean> | null = null;
 
-export function onSyncStateChange(listener: (syncing: boolean) => void): () => void {
-    syncListeners.push(listener)
+export function onSyncStateChange(
+    listener: (syncing: boolean) => void,
+): () => void {
+    syncListeners.push(listener);
     return () => {
-        syncListeners = syncListeners.filter((l) => l !== listener)
-    }
+        syncListeners = syncListeners.filter((l) => l !== listener);
+    };
 }
 
 function notifySyncState(syncing: boolean) {
-    isSyncing = syncing
-    syncListeners.forEach((l) => l(syncing))
+    isSyncing = syncing;
+    syncListeners.forEach((l) => l(syncing));
 }
 
 export function getIsSyncing(): boolean {
-    return isSyncing
+    return isSyncing;
 }
 
 export async function waitForSync(): Promise<boolean> {
     if (currentSyncPromise) {
-        return currentSyncPromise
+        return currentSyncPromise;
     }
-    return true
+    return true;
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 5000): Promise<Response> {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+async function fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeout = 5000,
+): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
     try {
-        const response = await fetch(url, { ...options, signal: controller.signal })
-        return response
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        return response;
     } finally {
-        clearTimeout(timeoutId)
+        clearTimeout(timeoutId);
     }
 }
 
 async function getServerGlobalHash(): Promise<string | null> {
     try {
-        const response = await fetchWithTimeout(`${API_BASE}/sync/status`)
-        if (!response.ok) return null
-        const data = await response.json()
-        return data.globalHash
+        const response = await fetchWithTimeout(`${API_BASE}/sync/status`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.globalHash;
     } catch {
-        return null
+        return null;
     }
 }
 
 async function getServerManifest(): Promise<ManifestEntry[]> {
-    const response = await fetchWithTimeout(`${API_BASE}/sync/manifest`)
-    if (!response.ok) throw new Error('Failed to fetch manifest')
-    return response.json()
+    const response = await fetchWithTimeout(`${API_BASE}/sync/manifest`);
+    if (!response.ok) throw new Error("Failed to fetch manifest");
+    return response.json();
 }
 
 async function getServerEntry(id: string): Promise<ServerEntry | null> {
     try {
-        const response = await fetchWithTimeout(`${API_BASE}/sync/entries/${id}`)
-        if (!response.ok) return null
-        return response.json()
+        const response = await fetchWithTimeout(
+            `${API_BASE}/sync/entries/${id}`,
+        );
+        if (!response.ok) return null;
+        return response.json();
     } catch {
-        return null
+        return null;
     }
 }
 
 async function batchUpdate(
     updates: ServerEntry[],
-    deletions: string[]
+    deletions: string[],
 ): Promise<{ updated: number; deleted: number }> {
     const response = await fetchWithTimeout(`${API_BASE}/sync/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ updates, deletions }),
-    })
-    if (!response.ok) throw new Error('Batch update failed')
-    return response.json()
+    });
+    if (!response.ok) throw new Error("Batch update failed");
+    return response.json();
 }
 
 export async function sync(): Promise<boolean> {
     if (isSyncing) {
-        return waitForSync()
+        return waitForSync();
     }
-    if (!navigator.onLine) return false
+    if (!navigator.onLine) return false;
 
-    notifySyncState(true)
+    notifySyncState(true);
 
     currentSyncPromise = (async () => {
         try {
-            const serverGlobalHash = await getServerGlobalHash()
+            const serverGlobalHash = await getServerGlobalHash();
             if (serverGlobalHash === null) {
-                return false
+                return false;
             }
 
-            const localEntries = await getAllEntriesIncludingTrashed()
-            const activeLocalEntries = localEntries.filter((e) => !e.trashed && e.syncStatus === 'synced')
-            const localGlobalHash = await calculateGlobalHash(activeLocalEntries)
+            const localEntries = await getAllEntriesIncludingTrashed();
+            const activeLocalEntries = localEntries.filter(
+                (e) => !e.trashed && e.syncStatus === "synced",
+            );
+            const localGlobalHash =
+                await calculateGlobalHash(activeLocalEntries);
 
             if (serverGlobalHash === localGlobalHash) {
                 const pendingEntries = localEntries.filter(
-                    (e) => e.syncStatus === 'pending' || e.trashed
-                )
+                    (e) => e.syncStatus === "pending" || e.trashed,
+                );
                 if (pendingEntries.length === 0) {
-                    await setSyncState({ lastSyncTime: new Date().toISOString(), globalHash: serverGlobalHash })
-                    return true
+                    await setSyncState({
+                        lastSyncTime: new Date().toISOString(),
+                        globalHash: serverGlobalHash,
+                    });
+                    return true;
                 }
             }
 
-            const serverManifest = await getServerManifest()
-            const serverMap = new Map(serverManifest.map((e) => [e.id, e]))
-            const localMap = new Map(localEntries.map((e) => [e.id, e]))
+            const serverManifest = await getServerManifest();
+            const serverMap = new Map(serverManifest.map((e) => [e.id, e]));
+            const localMap = new Map(localEntries.map((e) => [e.id, e]));
 
-            const entriesToDownload: string[] = []
-            const entriesToUpload: LocalEntry[] = []
-            const entriesToDelete: string[] = []
+            const entriesToDownload: string[] = [];
+            const entriesToUpload: LocalEntry[] = [];
+            const entriesToDelete: string[] = [];
 
             for (const serverEntry of serverManifest) {
-                const local = localMap.get(serverEntry.id)
+                const local = localMap.get(serverEntry.id);
                 if (!local) {
-                    entriesToDownload.push(serverEntry.id)
-                } else if (!local.trashed && local.syncStatus === 'synced') {
+                    entriesToDownload.push(serverEntry.id);
+                } else if (!local.trashed && local.syncStatus === "synced") {
                     if (serverEntry.hash !== local.hash) {
-                        const serverTime = new Date(serverEntry.lastUpdated).getTime()
-                        const localTime = new Date(local.lastUpdated).getTime()
+                        const serverTime = new Date(
+                            serverEntry.lastUpdated,
+                        ).getTime();
+                        const localTime = new Date(local.lastUpdated).getTime();
                         if (serverTime > localTime) {
-                            entriesToDownload.push(serverEntry.id)
+                            entriesToDownload.push(serverEntry.id);
                         } else if (localTime > serverTime) {
-                            entriesToUpload.push(local)
+                            entriesToUpload.push(local);
                         }
                     }
                 }
@@ -159,15 +178,21 @@ export async function sync(): Promise<boolean> {
 
             for (const local of localEntries) {
                 if (local.trashed) {
-                    if (serverMap.has(local.id) || local.syncStatus === 'pending') {
-                        entriesToDelete.push(local.id)
+                    if (
+                        serverMap.has(local.id) ||
+                        local.syncStatus === "pending"
+                    ) {
+                        entriesToDelete.push(local.id);
                     }
-                } else if (local.syncStatus === 'pending') {
+                } else if (local.syncStatus === "pending") {
                     if (!entriesToUpload.find((e) => e.id === local.id)) {
-                        entriesToUpload.push(local)
+                        entriesToUpload.push(local);
                     }
-                } else if (!serverMap.has(local.id) && local.syncStatus === 'synced') {
-                    await hardDeleteEntry(local.id)
+                } else if (
+                    !serverMap.has(local.id) &&
+                    local.syncStatus === "synced"
+                ) {
+                    await hardDeleteEntry(local.id);
                 }
             }
 
@@ -179,20 +204,20 @@ export async function sync(): Promise<boolean> {
                     lastUpdated: e.lastUpdated,
                     hash: e.hash,
                     tags: e.tags,
-                }))
-                await batchUpdate(updates, entriesToDelete)
+                }));
+                await batchUpdate(updates, entriesToDelete);
 
                 for (const entry of entriesToUpload) {
-                    entry.syncStatus = 'synced'
-                    await saveLocalEntry(entry)
+                    entry.syncStatus = "synced";
+                    await saveLocalEntry(entry);
                 }
                 for (const id of entriesToDelete) {
-                    await hardDeleteEntry(id)
+                    await hardDeleteEntry(id);
                 }
             }
 
             for (const id of entriesToDownload) {
-                const serverEntry = await getServerEntry(id)
+                const serverEntry = await getServerEntry(id);
                 if (serverEntry) {
                     const localEntry: LocalEntry = {
                         id: serverEntry.id,
@@ -202,64 +227,67 @@ export async function sync(): Promise<boolean> {
                         hash: serverEntry.hash,
                         tags: serverEntry.tags,
                         trashed: false,
-                        syncStatus: 'synced',
-                    }
-                    await saveLocalEntry(localEntry)
+                        syncStatus: "synced",
+                    };
+                    await saveLocalEntry(localEntry);
                 }
             }
 
-            const newServerHash = await getServerGlobalHash()
+            const newServerHash = await getServerGlobalHash();
             await setSyncState({
                 lastSyncTime: new Date().toISOString(),
                 globalHash: newServerHash || undefined,
-            })
+            });
 
-            return true
+            return true;
         } catch (error) {
-            console.error('Sync failed:', error)
-            return false
+            console.error("Sync failed:", error);
+            return false;
         } finally {
-            notifySyncState(false)
-            currentSyncPromise = null
+            notifySyncState(false);
+            currentSyncPromise = null;
         }
-    })()
+    })();
 
-    return currentSyncPromise
+    return currentSyncPromise;
 }
 
-let syncInterval: ReturnType<typeof setInterval> | null = null
+let syncInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startPeriodicSync(intervalMs = 5 * 60 * 1000): void {
-    if (syncInterval) return
+    if (syncInterval) return;
     syncInterval = setInterval(() => {
         if (navigator.onLine) {
-            sync()
+            sync();
         }
-    }, intervalMs)
+    }, intervalMs);
 }
 
 export function stopPeriodicSync(): void {
     if (syncInterval) {
-        clearInterval(syncInterval)
-        syncInterval = null
+        clearInterval(syncInterval);
+        syncInterval = null;
     }
 }
 
 export async function registerBackgroundSync(): Promise<void> {
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    if ("serviceWorker" in navigator && "SyncManager" in window) {
         try {
-            const registration = await navigator.serviceWorker.ready
-            await (registration as any).sync.register('journal-sync')
+            const registration = await navigator.serviceWorker.ready;
+            await (registration as any).sync.register("journal-sync");
         } catch {
             // Background sync not supported, fallback handled by online event
         }
     }
 }
 
-export async function createEntry(content: string, tags?: string[]): Promise<LocalEntry> {
-    const id = crypto.randomUUID()
-    const now = new Date().toISOString()
-    const hash = await calculateEntryHash(content, { tags })
+export async function createEntry(
+    content: string,
+    tags?: string[],
+): Promise<LocalEntry> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const hash = await calculateEntryHash(content, { tags });
 
     const entry: LocalEntry = {
         id,
@@ -269,26 +297,30 @@ export async function createEntry(content: string, tags?: string[]): Promise<Loc
         hash,
         tags,
         trashed: false,
-        syncStatus: 'pending',
-    }
+        syncStatus: "pending",
+    };
 
-    await saveLocalEntry(entry)
+    await saveLocalEntry(entry);
 
     if (navigator.onLine) {
-        sync()
+        sync();
     } else {
-        registerBackgroundSync()
+        registerBackgroundSync();
     }
 
-    return entry
+    return entry;
 }
 
-export async function updateEntry(id: string, content: string, tags?: string[]): Promise<LocalEntry | null> {
-    const existing = await getLocalEntry(id)
-    if (!existing || existing.trashed) return null
+export async function updateEntry(
+    id: string,
+    content: string,
+    tags?: string[],
+): Promise<LocalEntry | null> {
+    const existing = await getLocalEntry(id);
+    if (!existing || existing.trashed) return null;
 
-    const hash = await calculateEntryHash(content, { tags })
-    const now = new Date().toISOString()
+    const hash = await calculateEntryHash(content, { tags });
+    const now = new Date().toISOString();
 
     const updated: LocalEntry = {
         ...existing,
@@ -296,66 +328,68 @@ export async function updateEntry(id: string, content: string, tags?: string[]):
         lastUpdated: now,
         hash,
         tags,
-        syncStatus: 'pending',
-    }
+        syncStatus: "pending",
+    };
 
-    await saveLocalEntry(updated)
+    await saveLocalEntry(updated);
 
     if (navigator.onLine) {
-        sync()
+        sync();
     } else {
-        registerBackgroundSync()
+        registerBackgroundSync();
     }
 
-    return updated
+    return updated;
 }
 
 export async function deleteEntryAndSync(id: string): Promise<void> {
-    const existing = await getLocalEntry(id)
-    if (!existing) return
+    const existing = await getLocalEntry(id);
+    if (!existing) return;
 
-    existing.trashed = true
-    existing.syncStatus = 'pending'
-    existing.lastUpdated = new Date().toISOString()
+    existing.trashed = true;
+    existing.syncStatus = "pending";
+    existing.lastUpdated = new Date().toISOString();
 
-    await saveLocalEntry(existing)
+    await saveLocalEntry(existing);
 
     if (navigator.onLine) {
-        sync()
+        sync();
     } else {
-        registerBackgroundSync()
+        registerBackgroundSync();
     }
 }
 
-export async function forceRefresh(onProgress?: (current: number, total: number) => void): Promise<void> {
+export async function forceRefresh(
+    onProgress?: (current: number, total: number) => void,
+): Promise<void> {
     if (!navigator.onLine) {
-        throw new Error('Cannot force refresh while offline')
+        throw new Error("Cannot force refresh while offline");
     }
 
     if (isSyncing) {
-        throw new Error('A sync operation is already in progress')
+        throw new Error("A sync operation is already in progress");
     }
 
-    notifySyncState(true)
+    notifySyncState(true);
 
     try {
-        const serverManifest = await getServerManifest()
-        const serverIdSet = new Set(serverManifest.map((e) => e.id))
+        const serverManifest = await getServerManifest();
+        const serverIdSet = new Set(serverManifest.map((e) => e.id));
 
-        const localEntries = await getAllEntriesIncludingTrashed()
+        const localEntries = await getAllEntriesIncludingTrashed();
         for (const local of localEntries) {
             if (!serverIdSet.has(local.id)) {
-                await hardDeleteEntry(local.id)
+                await hardDeleteEntry(local.id);
             }
         }
 
-        const total = serverManifest.length
-        let current = 0
-        const concurrencyLimit = 5
-        const queue = [...serverManifest]
+        const total = serverManifest.length;
+        let current = 0;
+        const concurrencyLimit = 5;
+        const queue = [...serverManifest];
 
         async function processEntry(entry: ManifestEntry): Promise<void> {
-            const serverEntry = await getServerEntry(entry.id)
+            const serverEntry = await getServerEntry(entry.id);
             if (serverEntry) {
                 const localEntry: LocalEntry = {
                     id: serverEntry.id,
@@ -365,35 +399,38 @@ export async function forceRefresh(onProgress?: (current: number, total: number)
                     hash: serverEntry.hash,
                     tags: serverEntry.tags,
                     trashed: false,
-                    syncStatus: 'synced',
-                }
-                await saveLocalEntry(localEntry)
+                    syncStatus: "synced",
+                };
+                await saveLocalEntry(localEntry);
             }
-            current++
-            onProgress?.(current, total)
+            current++;
+            onProgress?.(current, total);
         }
 
-        const activePromises: Promise<void>[] = []
+        const activePromises: Promise<void>[] = [];
         while (queue.length > 0 || activePromises.length > 0) {
-            while (activePromises.length < concurrencyLimit && queue.length > 0) {
-                const entry = queue.shift()!
+            while (
+                activePromises.length < concurrencyLimit &&
+                queue.length > 0
+            ) {
+                const entry = queue.shift()!;
                 const promise = processEntry(entry).finally(() => {
-                    const index = activePromises.indexOf(promise)
-                    if (index > -1) activePromises.splice(index, 1)
-                })
-                activePromises.push(promise)
+                    const index = activePromises.indexOf(promise);
+                    if (index > -1) activePromises.splice(index, 1);
+                });
+                activePromises.push(promise);
             }
             if (activePromises.length > 0) {
-                await Promise.race(activePromises)
+                await Promise.race(activePromises);
             }
         }
 
-        const newServerHash = await getServerGlobalHash()
+        const newServerHash = await getServerGlobalHash();
         await setSyncState({
             lastSyncTime: new Date().toISOString(),
             globalHash: newServerHash || undefined,
-        })
+        });
     } finally {
-        notifySyncState(false)
+        notifySyncState(false);
     }
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useJournalInit } from '@/composables/useJournal'
+import { useJournalInit } from "@/composables/useJournal";
 
-const { isOnline, isSyncing } = useJournalInit()
+const { isOnline, isSyncing } = useJournalInit();
 </script>
 
 <template>
@@ -11,10 +11,18 @@ const { isOnline, isSyncing } = useJournalInit()
                 <h1>Journal</h1>
             </router-link>
             <div class="header-right">
-                <router-link to="/settings" class="settings-link" data-testid="settings-link">
+                <router-link
+                    to="/settings"
+                    class="settings-link"
+                    data-testid="settings-link"
+                >
                     Settings
                 </router-link>
-                <span class="sync-status" :class="{ syncing: isSyncing }" data-testid="sync-status">
+                <span
+                    class="sync-status"
+                    :class="{ syncing: isSyncing }"
+                    data-testid="sync-status"
+                >
                     <template v-if="isSyncing">Syncing...</template>
                 </span>
                 <span
@@ -22,7 +30,7 @@ const { isOnline, isSyncing } = useJournalInit()
                     :class="{ online: isOnline, offline: !isOnline }"
                     data-testid="connection-status"
                 >
-                    {{ isOnline ? 'Online' : 'Offline' }}
+                    {{ isOnline ? "Online" : "Offline" }}
                 </span>
             </div>
         </header>
@@ -55,7 +63,9 @@ const { isOnline, isSyncing } = useJournalInit()
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
-    --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family:
+        system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
     --font-size-base: 1rem;
     --font-size-sm: 0.875rem;
     --font-size-lg: 1.25rem;
@@ -127,8 +137,13 @@ const { isOnline, isSyncing } = useJournalInit()
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .settings-link {

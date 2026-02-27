@@ -1,35 +1,39 @@
 <script setup lang="ts">
-import type { Editor } from '@tiptap/vue-3'
-import { computed } from 'vue'
+import type { Editor } from "@tiptap/vue-3";
+import { computed } from "vue";
 
 const props = defineProps<{
-    editor: Editor | undefined
-}>()
+    editor: Editor | undefined;
+}>();
 
-const isBold = computed(() => props.editor?.isActive('bold') ?? false)
-const isItalic = computed(() => props.editor?.isActive('italic') ?? false)
-const isCode = computed(() => props.editor?.isActive('code') ?? false)
-const isCodeBlock = computed(() => props.editor?.isActive('codeBlock') ?? false)
-const isBulletList = computed(() => props.editor?.isActive('bulletList') ?? false)
+const isBold = computed(() => props.editor?.isActive("bold") ?? false);
+const isItalic = computed(() => props.editor?.isActive("italic") ?? false);
+const isCode = computed(() => props.editor?.isActive("code") ?? false);
+const isCodeBlock = computed(
+    () => props.editor?.isActive("codeBlock") ?? false,
+);
+const isBulletList = computed(
+    () => props.editor?.isActive("bulletList") ?? false,
+);
 
 function toggleBold() {
-    props.editor?.chain().focus().toggleBold().run()
+    props.editor?.chain().focus().toggleBold().run();
 }
 
 function toggleItalic() {
-    props.editor?.chain().focus().toggleItalic().run()
+    props.editor?.chain().focus().toggleItalic().run();
 }
 
 function toggleCode() {
-    props.editor?.chain().focus().toggleCode().run()
+    props.editor?.chain().focus().toggleCode().run();
 }
 
 function toggleCodeBlock() {
-    props.editor?.chain().focus().toggleCodeBlock().run()
+    props.editor?.chain().focus().toggleCodeBlock().run();
 }
 
 function toggleBulletList() {
-    props.editor?.chain().focus().toggleBulletList().run()
+    props.editor?.chain().focus().toggleBulletList().run();
 }
 </script>
 
@@ -110,7 +114,9 @@ function toggleBulletList() {
     color: var(--color-text, #1a1a1a);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
+    transition:
+        background-color 0.15s,
+        border-color 0.15s;
 }
 
 .toolbar-button:hover {

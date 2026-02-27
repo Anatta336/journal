@@ -1,77 +1,101 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useJournal } from '@/composables/useJournal'
+import { ref, onMounted } from "vue";
+import { useJournal } from "@/composables/useJournal";
 
-const { syncNow, forceRefresh, isSyncing, lastSyncTime, isOnline, refreshProgress } = useJournal()
+const {
+    syncNow,
+    forceRefresh,
+    isSyncing,
+    lastSyncTime,
+    isOnline,
+    refreshProgress,
+} = useJournal();
 
-const buildNumber = __BUILD_NUMBER__
-const storageUsed = ref<string>('')
-const syncResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-const forceRefreshResult = ref<{ type: 'success' | 'error'; text: string } | null>(null)
-const isForceRefreshing = ref(false)
+const buildNumber = __BUILD_NUMBER__;
+const storageUsed = ref<string>("");
+const syncResult = ref<{ type: "success" | "error"; text: string } | null>(
+    null,
+);
+const forceRefreshResult = ref<{
+    type: "success" | "error";
+    text: string;
+} | null>(null);
+const isForceRefreshing = ref(false);
 
 async function updateStorageEstimate() {
     if (navigator.storage && navigator.storage.estimate) {
-        const estimate = await navigator.storage.estimate()
-        const used = estimate.usage || 0
-        storageUsed.value = formatBytes(used)
+        const estimate = await navigator.storage.estimate();
+        const used = estimate.usage || 0;
+        storageUsed.value = formatBytes(used);
     } else {
-        storageUsed.value = 'Not available'
+        storageUsed.value = "Not available";
     }
 }
 
 function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 function formatLastSync(isoDate?: string): string {
-    if (!isoDate) return 'Never'
-    const date = new Date(isoDate)
-    return date.toLocaleString()
+    if (!isoDate) return "Never";
+    const date = new Date(isoDate);
+    return date.toLocaleString();
 }
 
 async function handleSyncNow() {
-    syncResult.value = null
-    const success = await syncNow()
+    syncResult.value = null;
+    const success = await syncNow();
     if (success) {
-        syncResult.value = { type: 'success', text: 'Sync completed successfully' }
+        syncResult.value = {
+            type: "success",
+            text: "Sync completed successfully",
+        };
     } else {
-        syncResult.value = { type: 'error', text: 'Sync failed. Please try again.' }
+        syncResult.value = {
+            type: "error",
+            text: "Sync failed. Please try again.",
+        };
     }
-    await updateStorageEstimate()
+    await updateStorageEstimate();
 }
 
 async function handleForceRefresh() {
     const confirmed = window.confirm(
-        'Force Refresh will overwrite all local changes with server data. ' +
-        'Any unsynced local entries will be lost, and entries deleted on the server will be removed locally. ' +
-        'Are you sure you want to continue?'
-    )
-    if (!confirmed) return
+        "Force Refresh will overwrite all local changes with server data. " +
+            "Any unsynced local entries will be lost, and entries deleted on the server will be removed locally. " +
+            "Are you sure you want to continue?",
+    );
+    if (!confirmed) return;
 
-    forceRefreshResult.value = null
-    isForceRefreshing.value = true
+    forceRefreshResult.value = null;
+    isForceRefreshing.value = true;
     try {
-        await forceRefresh()
-        forceRefreshResult.value = { type: 'success', text: 'Force refresh completed successfully' }
+        await forceRefresh();
+        forceRefreshResult.value = {
+            type: "success",
+            text: "Force refresh completed successfully",
+        };
     } catch (error) {
         forceRefreshResult.value = {
-            type: 'error',
-            text: error instanceof Error ? error.message : 'Force refresh failed. Please try again.',
-        }
+            type: "error",
+            text:
+                error instanceof Error
+                    ? error.message
+                    : "Force refresh failed. Please try again.",
+        };
     } finally {
-        isForceRefreshing.value = false
-        await updateStorageEstimate()
+        isForceRefreshing.value = false;
+        await updateStorageEstimate();
     }
 }
 
 onMounted(() => {
-    updateStorageEstimate()
-})
+    updateStorageEstimate();
+});
 </script>
 
 <template>
@@ -95,7 +119,7 @@ onMounted(() => {
                     :disabled="isSyncing"
                     data-testid="sync-now-btn"
                 >
-                    {{ isSyncing ? 'Syncing...' : 'Sync Now' }}
+                    {{ isSyncing ? "Syncing..." : "Sync Now" }}
                 </button>
                 <span
                     v-if="syncResult"
@@ -114,7 +138,7 @@ onMounted(() => {
                     :disabled="isSyncing || isForceRefreshing || !isOnline"
                     data-testid="force-refresh-btn"
                 >
-                    {{ isForceRefreshing ? 'Refreshing...' : 'Force Refresh' }}
+                    {{ isForceRefreshing ? "Refreshing..." : "Force Refresh" }}
                 </button>
                 <span
                     v-if="isForceRefreshing && refreshProgress.total > 0"

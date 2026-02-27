@@ -9,10 +9,14 @@ import {
     Entry,
 } from "../services/storage.js";
 
-const tagSchema = z.string()
+const tagSchema = z
+    .string()
     .min(1)
     .max(20)
-    .regex(/^[a-zA-Z0-9-]+$/, "Tags must contain only alphanumeric characters and hyphens");
+    .regex(
+        /^[a-zA-Z0-9-]+$/,
+        "Tags must contain only alphanumeric characters and hyphens",
+    );
 
 const entrySchema = z.object({
     id: z.string().uuid(),

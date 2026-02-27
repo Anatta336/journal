@@ -1,10 +1,10 @@
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import {
     getAllEntries,
     getEntry as getLocalEntry,
     getSyncState,
     type LocalEntry,
-} from '@/services/db'
+} from "@/services/db";
 import {
     sync,
     createEntry,
@@ -15,78 +15,88 @@ import {
     startPeriodicSync,
     stopPeriodicSync,
     forceRefresh as forceRefreshSync,
-} from '@/services/sync'
+} from "@/services/sync";
 
 export interface EntryPreview {
-    id: string
-    creationDate: string
-    lastUpdated: string
-    preview: string
-    syncStatus: string
-    tags?: string[]
+    id: string;
+    creationDate: string;
+    lastUpdated: string;
+    preview: string;
+    syncStatus: string;
+    tags?: string[];
 }
 
-const entries = ref<LocalEntry[]>([])
-const isOnline = ref(navigator.onLine)
-const isSyncing = ref(getIsSyncing())
-const lastSyncTime = ref<string | undefined>()
-const isInitialized = ref(false)
-const isLoading = ref(true)
-const refreshProgress = ref<{ current: number; total: number }>({ current: 0, total: 0 })
+const entries = ref<LocalEntry[]>([]);
+const isOnline = ref(navigator.onLine);
+const isSyncing = ref(getIsSyncing());
+const lastSyncTime = ref<string | undefined>();
+const isInitialized = ref(false);
+const isLoading = ref(true);
+const refreshProgress = ref<{ current: number; total: number }>({
+    current: 0,
+    total: 0,
+});
 
 export function useJournal() {
     async function loadEntries() {
-        isLoading.value = true
+        isLoading.value = true;
         try {
-            entries.value = await getAllEntries()
-            const syncState = await getSyncState()
-            lastSyncTime.value = syncState.lastSyncTime
+            entries.value = await getAllEntries();
+            const syncState = await getSyncState();
+            lastSyncTime.value = syncState.lastSyncTime;
         } finally {
-            isLoading.value = false
+            isLoading.value = false;
         }
     }
 
     async function refreshEntries() {
-        entries.value = await getAllEntries()
+        entries.value = await getAllEntries();
     }
 
     async function getEntry(id: string): Promise<LocalEntry | undefined> {
-        return getLocalEntry(id)
+        return getLocalEntry(id);
     }
 
-    async function saveNewEntry(content: string, tags?: string[]): Promise<LocalEntry> {
-        const entry = await createEntry(content, tags)
-        await refreshEntries()
-        return entry
+    async function saveNewEntry(
+        content: string,
+        tags?: string[],
+    ): Promise<LocalEntry> {
+        const entry = await createEntry(content, tags);
+        await refreshEntries();
+        return entry;
     }
 
-    async function saveExistingEntry(id: string, content: string, tags?: string[]): Promise<LocalEntry | null> {
-        const updated = await updateEntry(id, content, tags)
+    async function saveExistingEntry(
+        id: string,
+        content: string,
+        tags?: string[],
+    ): Promise<LocalEntry | null> {
+        const updated = await updateEntry(id, content, tags);
         if (updated) {
-            await refreshEntries()
+            await refreshEntries();
         }
-        return updated
+        return updated;
     }
 
     async function removeEntry(id: string): Promise<void> {
-        await deleteEntryAndSync(id)
-        await refreshEntries()
+        await deleteEntryAndSync(id);
+        await refreshEntries();
     }
 
     async function syncNow(): Promise<boolean> {
-        const result = await sync()
+        const result = await sync();
         if (result) {
-            await loadEntries()
+            await loadEntries();
         }
-        return result
+        return result;
     }
 
     async function forceRefresh(): Promise<void> {
-        refreshProgress.value = { current: 0, total: 0 }
+        refreshProgress.value = { current: 0, total: 0 };
         await forceRefreshSync((current, total) => {
-            refreshProgress.value = { current, total }
-        })
-        await loadEntries()
+            refreshProgress.value = { current, total };
+        });
+        await loadEntries();
     }
 
     const entryPreviews = computed<EntryPreview[]>(() => {
@@ -97,48 +107,48 @@ export function useJournal() {
             preview: e.content.slice(0, 1000), // Avoid loading huge amounts of content.
             syncStatus: e.syncStatus,
             tags: e.tags,
-        }))
-    })
+        }));
+    });
 
     function setupListeners() {
         const handleOnline = () => {
-            isOnline.value = true
-            sync().then(() => refreshEntries())
-        }
+            isOnline.value = true;
+            sync().then(() => refreshEntries());
+        };
         const handleOffline = () => {
-            isOnline.value = false
-        }
+            isOnline.value = false;
+        };
 
-        window.addEventListener('online', handleOnline)
-        window.addEventListener('offline', handleOffline)
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
 
         const unsubscribeSyncState = onSyncStateChange((syncing) => {
-            isSyncing.value = syncing
+            isSyncing.value = syncing;
             if (!syncing) {
                 getSyncState().then((state) => {
-                    lastSyncTime.value = state.lastSyncTime
-                })
-                refreshEntries()
+                    lastSyncTime.value = state.lastSyncTime;
+                });
+                refreshEntries();
             }
-        })
+        });
 
         return () => {
-            window.removeEventListener('online', handleOnline)
-            window.removeEventListener('offline', handleOffline)
-            unsubscribeSyncState()
-        }
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+            unsubscribeSyncState();
+        };
     }
 
     async function initialize() {
-        if (isInitialized.value) return
+        if (isInitialized.value) return;
 
-        isInitialized.value = true
-        startPeriodicSync()
+        isInitialized.value = true;
+        startPeriodicSync();
 
         if (navigator.onLine) {
-            await sync()
+            await sync();
         }
-        await loadEntries()
+        await loadEntries();
     }
 
     return {
@@ -159,21 +169,21 @@ export function useJournal() {
         forceRefresh,
         setupListeners,
         initialize,
-    }
+    };
 }
 
 export function useJournalInit() {
-    const journal = useJournal()
+    const journal = useJournal();
 
     onMounted(() => {
-        const cleanup = journal.setupListeners()
-        journal.initialize()
+        const cleanup = journal.setupListeners();
+        journal.initialize();
 
         onUnmounted(() => {
-            cleanup()
-            stopPeriodicSync()
-        })
-    })
+            cleanup();
+            stopPeriodicSync();
+        });
+    });
 
-    return journal
+    return journal;
 }

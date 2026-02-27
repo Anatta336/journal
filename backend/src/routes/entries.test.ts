@@ -1,9 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    beforeEach,
+    afterEach,
+    beforeAll,
+    afterAll,
+} from "vitest";
 import fs from "fs/promises";
 import path from "path";
 import { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
-import { ensureStorageDirectories, DATA_DIR, TRASH_DIR } from "../services/storage.js";
+import {
+    ensureStorageDirectories,
+    DATA_DIR,
+    TRASH_DIR,
+} from "../services/storage.js";
 
 async function cleanupTestDirectories() {
     try {
@@ -12,10 +24,15 @@ async function cleanupTestDirectories() {
             if (entry.name === ".gitignore") continue;
             const fullPath = path.join(DATA_DIR, entry.name);
             if (entry.isDirectory() && entry.name === ".trash") {
-                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                const trashEntries = await fs.readdir(fullPath, {
+                    withFileTypes: true,
+                });
                 for (const trashEntry of trashEntries) {
                     if (trashEntry.name === ".gitignore") continue;
-                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                    await fs.rm(path.join(fullPath, trashEntry.name), {
+                        recursive: true,
+                        force: true,
+                    });
                 }
             } else {
                 await fs.rm(fullPath, { recursive: true, force: true });
@@ -62,7 +79,10 @@ describe("Entries API", () => {
             await app.inject({
                 method: "POST",
                 url: "/entries",
-                payload: { content: "This is a test entry with more than thirty characters for preview" },
+                payload: {
+                    content:
+                        "This is a test entry with more than thirty characters for preview",
+                },
             });
 
             const response = await app.inject({
@@ -85,7 +105,7 @@ describe("Entries API", () => {
                 url: "/entries",
                 payload: { content: "First entry" },
             });
-            await new Promise(r => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 10));
             await app.inject({
                 method: "POST",
                 url: "/entries",
@@ -193,7 +213,7 @@ describe("Entries API", () => {
             });
             const created = createResponse.json();
 
-            await new Promise(r => setTimeout(r, 10));
+            await new Promise((r) => setTimeout(r, 10));
 
             const response = await app.inject({
                 method: "PUT",
@@ -206,7 +226,7 @@ describe("Entries API", () => {
             expect(updated.content).toBe("Updated content");
             expect(updated.creationDate).toBe(created.creationDate);
             expect(new Date(updated.lastUpdated).getTime()).toBeGreaterThan(
-                new Date(created.lastUpdated).getTime()
+                new Date(created.lastUpdated).getTime(),
             );
         });
 
@@ -262,7 +282,10 @@ describe("Entries API", () => {
             expect(getResponse.statusCode).toBe(404);
 
             const trashPath = `${TRASH_DIR}/${created.id}.md`;
-            const trashExists = await fs.stat(trashPath).then(() => true).catch(() => false);
+            const trashExists = await fs
+                .stat(trashPath)
+                .then(() => true)
+                .catch(() => false);
             expect(trashExists).toBe(true);
         });
 
@@ -290,7 +313,10 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
-                payload: { content: "Entry with tags", tags: ["work", "important"] },
+                payload: {
+                    content: "Entry with tags",
+                    tags: ["work", "important"],
+                },
             });
 
             expect(response.statusCode).toBe(201);
@@ -321,7 +347,10 @@ describe("Entries API", () => {
             await app.inject({
                 method: "POST",
                 url: "/entries",
-                payload: { content: "Entry with tags", tags: ["work", "journal"] },
+                payload: {
+                    content: "Entry with tags",
+                    tags: ["work", "journal"],
+                },
             });
 
             const response = await app.inject({
@@ -348,7 +377,10 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
-                payload: { content: "Content", tags: ["this-tag-is-way-too-long-for-us"] },
+                payload: {
+                    content: "Content",
+                    tags: ["this-tag-is-way-too-long-for-us"],
+                },
             });
 
             expect(response.statusCode).toBe(400);

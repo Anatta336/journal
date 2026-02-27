@@ -1,27 +1,28 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, computed } from 'vue'
-import { marked } from 'marked'
+import { ref, onMounted, watch, nextTick, computed } from "vue";
+import { marked } from "marked";
 
 const props = defineProps<{
-    content: string
-}>()
+    content: string;
+}>();
 
-const containerRef = ref<HTMLElement | null>(null)
-const hasOverflow = ref(false)
+const containerRef = ref<HTMLElement | null>(null);
+const hasOverflow = ref(false);
 
 const htmlContent = computed(() => {
-    return marked.parse(props.content) as string
-})
+    return marked.parse(props.content) as string;
+});
 
 async function checkOverflow() {
-    await nextTick()
+    await nextTick();
     if (containerRef.value) {
-        hasOverflow.value = containerRef.value.scrollHeight > containerRef.value.clientHeight
+        hasOverflow.value =
+            containerRef.value.scrollHeight > containerRef.value.clientHeight;
     }
 }
 
-onMounted(checkOverflow)
-watch(() => props.content, checkOverflow)
+onMounted(checkOverflow);
+watch(() => props.content, checkOverflow);
 </script>
 
 <template>
@@ -45,13 +46,17 @@ watch(() => props.content, checkOverflow)
 }
 
 .entry-preview.has-overflow::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 20px;
-    background: linear-gradient(to bottom, transparent, var(--preview-fade-color, var(--color-bg, #1f1f1f)));
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--preview-fade-color, var(--color-bg, #1f1f1f))
+    );
     pointer-events: none;
 }
 

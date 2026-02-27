@@ -1,149 +1,152 @@
 <script setup lang="ts">
-import { useEditor, EditorContent } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import { Markdown } from '@tiptap/markdown'
-import EditorToolbar from './EditorToolbar.vue'
-import { EscapedChar, MarkdownEscape } from '@/extensions/MarkdownEscape'
+import { useEditor, EditorContent } from "@tiptap/vue-3";
+import StarterKit from "@tiptap/starter-kit";
+import { Markdown } from "@tiptap/markdown";
+import EditorToolbar from "./EditorToolbar.vue";
+import { EscapedChar, MarkdownEscape } from "@/extensions/MarkdownEscape";
 
 const emit = defineEmits<{
-    update: []
-}>()
+    update: [];
+}>();
 
 const editor = useEditor({
-    extensions: [
-        StarterKit,
-        Markdown,
-        EscapedChar,
-        MarkdownEscape,
-    ],
-    content: '',
+    extensions: [StarterKit, Markdown, EscapedChar, MarkdownEscape],
+    content: "",
     editorProps: {
         attributes: {
-            'data-testid': 'editor-content',
+            "data-testid": "editor-content",
         },
     },
     onUpdate: () => {
-        emit('update')
+        emit("update");
     },
-})
+});
 
-const ESCAPED_CHARS_LIST = '*_`#[]~>!-+\\(){}.|=^'
+const ESCAPED_CHARS_LIST = "*_`#[]~>!-+\\(){}.|=^";
 
 function escapeMarkdownChars(text: string, hasEscapedMark: boolean): string {
-    if (!hasEscapedMark) return text
-    return text.replace(/([*_`#\[\]~>!\-+\\(){}.|=^])/g, '\\$1')
+    if (!hasEscapedMark) return text;
+    return text.replace(/([*_`#\[\]~>!\-+\\(){}.|=^])/g, "\\$1");
 }
 
 function getMarkdown(): string {
-    if (!editor.value) return ''
-    const manager = editor.value.storage.markdown?.manager
-    if (!manager) return ''
+    if (!editor.value) return "";
+    const manager = editor.value.storage.markdown?.manager;
+    if (!manager) return "";
 
-    const json = editor.value.getJSON()
+    const json = editor.value.getJSON();
 
     const processContent = (content: Record<string, unknown>[]): void => {
         for (const node of content) {
-            if (node.type === 'text') {
-                const marks = (node.marks as Array<{ type: string }>) || []
-                const hasEscapedMark = marks.some(m => m.type === 'escapedChar')
+            if (node.type === "text") {
+                const marks = (node.marks as Array<{ type: string }>) || [];
+                const hasEscapedMark = marks.some(
+                    (m) => m.type === "escapedChar",
+                );
                 if (hasEscapedMark) {
-                    node.text = escapeMarkdownChars(node.text as string, true)
-                    node.marks = marks.filter(m => m.type !== 'escapedChar')
+                    node.text = escapeMarkdownChars(node.text as string, true);
+                    node.marks = marks.filter((m) => m.type !== "escapedChar");
                 }
             }
             if (node.content && Array.isArray(node.content)) {
-                processContent(node.content as Record<string, unknown>[])
+                processContent(node.content as Record<string, unknown>[]);
             }
         }
-    }
+    };
 
     if (json.content) {
-        processContent(json.content as Record<string, unknown>[])
+        processContent(json.content as Record<string, unknown>[]);
     }
 
-    return manager.serialize(json)
+    return manager.serialize(json);
 }
 
 function setMarkdown(content: string): void {
-    if (!editor.value) return
-    const manager = editor.value.storage.markdown?.manager
+    if (!editor.value) return;
+    const manager = editor.value.storage.markdown?.manager;
     if (!manager) {
-        editor.value.commands.setContent(content)
-        return
+        editor.value.commands.setContent(content);
+        return;
     }
 
     // Replace escaped characters with a placeholder that won't be stripped
-    const charMap: Record<string, string> = {}
-    const reverseMap: Record<string, string> = {}
+    const charMap: Record<string, string> = {};
+    const reverseMap: Record<string, string> = {};
 
     for (let i = 0; i < ESCAPED_CHARS_LIST.length; i++) {
-        const char = ESCAPED_CHARS_LIST[i]
-        const placeholder = String.fromCharCode(0xE000 + i)
-        charMap[char] = placeholder
-        reverseMap[placeholder] = char
+        const char = ESCAPED_CHARS_LIST[i];
+        const placeholder = String.fromCharCode(0xe000 + i);
+        charMap[char] = placeholder;
+        reverseMap[placeholder] = char;
     }
 
-    const escapedContent = content.replace(/\\([*_`#\[\]~>!\-+\\(){}.|=^])/g, (match, char) => {
-        return charMap[char] || match
-    })
-    const parsed = manager.parse(escapedContent)
+    const escapedContent = content.replace(
+        /\\([*_`#\[\]~>!\-+\\(){}.|=^])/g,
+        (match, char) => {
+            return charMap[char] || match;
+        },
+    );
+    const parsed = manager.parse(escapedContent);
 
-    const placeholderRegex = new RegExp(`[${Object.values(charMap).join('')}]`, 'g')
+    const placeholderRegex = new RegExp(
+        `[${Object.values(charMap).join("")}]`,
+        "g",
+    );
 
     const processContent = (nodes: any[]): any[] => {
-        const newNodes: any[] = []
+        const newNodes: any[] = [];
         for (const node of nodes) {
-            if (node.type === 'text') {
-                const text = node.text as string
-                let lastIndex = 0
-                let match
+            if (node.type === "text") {
+                const text = node.text as string;
+                let lastIndex = 0;
+                let match;
 
-                placeholderRegex.lastIndex = 0
+                placeholderRegex.lastIndex = 0;
                 while ((match = placeholderRegex.exec(text)) !== null) {
                     if (match.index > lastIndex) {
                         newNodes.push({
-                            type: 'text',
+                            type: "text",
                             text: text.slice(lastIndex, match.index),
-                            marks: node.marks
-                        })
+                            marks: node.marks,
+                        });
                     }
                     newNodes.push({
-                        type: 'text',
+                        type: "text",
                         text: reverseMap[match[0]],
-                        marks: [...(node.marks || []), { type: 'escapedChar' }]
-                    })
-                    lastIndex = placeholderRegex.lastIndex
+                        marks: [...(node.marks || []), { type: "escapedChar" }],
+                    });
+                    lastIndex = placeholderRegex.lastIndex;
                 }
 
                 if (lastIndex < text.length) {
                     newNodes.push({
-                        type: 'text',
+                        type: "text",
                         text: text.slice(lastIndex),
-                        marks: node.marks
-                    })
+                        marks: node.marks,
+                    });
                 }
             } else {
                 if (node.content && Array.isArray(node.content)) {
-                    node.content = processContent(node.content)
+                    node.content = processContent(node.content);
                 }
-                newNodes.push(node)
+                newNodes.push(node);
             }
         }
-        return newNodes
-    }
+        return newNodes;
+    };
 
     if (parsed.content) {
-        parsed.content = processContent(parsed.content)
+        parsed.content = processContent(parsed.content);
     }
 
-    editor.value.commands.setContent(parsed)
+    editor.value.commands.setContent(parsed);
 }
 
 defineExpose({
     editor,
     getMarkdown,
     setMarkdown,
-})
+});
 </script>
 
 <template>
@@ -200,7 +203,8 @@ defineExpose({
     background-color: var(--color-code-bg, #f3f4f6);
     border-radius: 0.25rem;
     padding: 0.125rem 0.375rem;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-family:
+        ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     font-size: 0.875em;
     color: var(--color-code-text, #374151);
 }

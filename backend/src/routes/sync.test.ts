@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    beforeEach,
+    afterEach,
+    beforeAll,
+    afterAll,
+} from "vitest";
 import fs from "fs/promises";
 import path from "path";
 import { FastifyInstance } from "fastify";
@@ -17,10 +25,15 @@ async function cleanupTestDirectories() {
             if (entry.name === ".gitignore") continue;
             const fullPath = path.join(DATA_DIR, entry.name);
             if (entry.isDirectory() && entry.name === ".trash") {
-                const trashEntries = await fs.readdir(fullPath, { withFileTypes: true });
+                const trashEntries = await fs.readdir(fullPath, {
+                    withFileTypes: true,
+                });
                 for (const trashEntry of trashEntries) {
                     if (trashEntry.name === ".gitignore") continue;
-                    await fs.rm(path.join(fullPath, trashEntry.name), { recursive: true, force: true });
+                    await fs.rm(path.join(fullPath, trashEntry.name), {
+                        recursive: true,
+                        force: true,
+                    });
                 }
             } else {
                 await fs.rm(fullPath, { recursive: true, force: true });
@@ -83,7 +96,9 @@ describe("Sync API", () => {
                 url: "/sync/status",
             });
 
-            expect(response1.json().globalHash).toBe(response2.json().globalHash);
+            expect(response1.json().globalHash).toBe(
+                response2.json().globalHash,
+            );
         });
     });
 
@@ -259,7 +274,8 @@ describe("Sync API", () => {
             });
             expect(getResponse.statusCode).toBe(404);
 
-            const trashFile = await fs.stat(`${TRASH_DIR}/66666666-6666-6666-6666-666666666666.md`)
+            const trashFile = await fs
+                .stat(`${TRASH_DIR}/66666666-6666-6666-6666-666666666666.md`)
                 .then(() => true)
                 .catch(() => false);
             expect(trashFile).toBe(true);

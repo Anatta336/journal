@@ -8,7 +8,8 @@ import { createHash } from "crypto";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..", "..");
 
-const isTesting = process.env.TESTING === "true" || process.env.NODE_ENV === "test";
+const isTesting =
+    process.env.TESTING === "true" || process.env.NODE_ENV === "test";
 const dataFolder = isTesting ? "data-test" : "data";
 const DATA_DIR = path.join(PROJECT_ROOT, dataFolder, "entries");
 const TRASH_DIR = path.join(DATA_DIR, ".trash");
@@ -17,7 +18,9 @@ export interface HashableMetadata {
     tags?: string[];
 }
 
-function normalizeMetadata(metadata?: HashableMetadata): Record<string, unknown> {
+function normalizeMetadata(
+    metadata?: HashableMetadata,
+): Record<string, unknown> {
     const normalized: Record<string, unknown> = {};
     if (metadata?.tags && metadata.tags.length > 0) {
         normalized.tags = [...metadata.tags].sort();
@@ -25,12 +28,18 @@ function normalizeMetadata(metadata?: HashableMetadata): Record<string, unknown>
     return normalized;
 }
 
-export function calculateEntryHash(content: string, metadata?: HashableMetadata): string {
+export function calculateEntryHash(
+    content: string,
+    metadata?: HashableMetadata,
+): string {
     const normalizedMeta = normalizeMetadata(metadata);
-    const metaString = Object.keys(normalizedMeta).length > 0
-        ? JSON.stringify(normalizedMeta)
-        : "";
-    return createHash("sha256").update(content + metaString).digest("hex");
+    const metaString =
+        Object.keys(normalizedMeta).length > 0
+            ? JSON.stringify(normalizedMeta)
+            : "";
+    return createHash("sha256")
+        .update(content + metaString)
+        .digest("hex");
 }
 
 export interface EntryMetadata {
@@ -96,8 +105,10 @@ export async function getAllEntries(): Promise<EntryPreview[]> {
         }
     }
 
-    entries.sort((a, b) =>
-        new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()
+    entries.sort(
+        (a, b) =>
+            new Date(b.creationDate).getTime() -
+            new Date(a.creationDate).getTime(),
     );
 
     return entries;
@@ -122,12 +133,19 @@ export async function getEntry(id: string): Promise<Entry | null> {
         if (!creationDate) {
             const fileCreationTime = await getFileCreationTime(filePath);
             creationDate = fileCreationTime.toISOString();
-            await saveEntryToFile(id, parsed.content, creationDate, data.lastUpdated as string || creationDate);
+            await saveEntryToFile(
+                id,
+                parsed.content,
+                creationDate,
+                (data.lastUpdated as string) || creationDate,
+            );
         }
 
         const lastUpdated = (data.lastUpdated as string) || creationDate;
         const hash = data.hash as string | undefined;
-        const tags = Array.isArray(data.tags) ? (data.tags as string[]) : undefined;
+        const tags = Array.isArray(data.tags)
+            ? (data.tags as string[])
+            : undefined;
 
         return {
             id,
@@ -148,7 +166,7 @@ async function saveEntryToFile(
     creationDate: string,
     lastUpdated: string,
     hash?: string,
-    tags?: string[]
+    tags?: string[],
 ): Promise<void> {
     const filePath = getEntryPath(id);
     const frontmatter: Record<string, string | string[]> = {
@@ -166,7 +184,10 @@ async function saveEntryToFile(
     await fs.writeFile(filePath, fileContent, "utf-8");
 }
 
-export async function createEntry(content: string, tags?: string[]): Promise<Entry> {
+export async function createEntry(
+    content: string,
+    tags?: string[],
+): Promise<Entry> {
     const id = uuidv4();
     const now = new Date().toISOString();
     const hash = calculateEntryHash(content, { tags });
@@ -183,7 +204,11 @@ export async function createEntry(content: string, tags?: string[]): Promise<Ent
     };
 }
 
-export async function updateEntry(id: string, content: string, tags?: string[]): Promise<Entry | null> {
+export async function updateEntry(
+    id: string,
+    content: string,
+    tags?: string[],
+): Promise<Entry | null> {
     const existing = await getEntry(id);
     if (!existing) {
         return null;
@@ -271,7 +296,7 @@ export async function saveEntry(entry: Entry): Promise<Entry> {
         entry.creationDate,
         entry.lastUpdated,
         entry.hash,
-        entry.tags
+        entry.tags,
     );
     return entry;
 }
