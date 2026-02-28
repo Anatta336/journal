@@ -5,6 +5,7 @@ import { createHash } from "crypto";
 import { entriesRoutes } from "./routes/entries.js";
 import { syncRoutes } from "./routes/sync.js";
 import { authRoutes } from "./routes/auth.js";
+import { mcpRoutes } from "./mcp/routes.js";
 import { ensureStorageDirectories } from "./services/storage.js";
 import { initDb, getDb } from "./db.js";
 import { initPassword } from "./services/auth.js";
@@ -24,6 +25,19 @@ export async function buildApp(): Promise<FastifyInstance> {
         timeWindow: "1 minute",
     });
 
+    fastify.addContentTypeParser(
+        "application/x-www-form-urlencoded",
+        { parseAs: "string" },
+        (_request, body, done) => {
+            const params = new URLSearchParams(body as string);
+            const result: Record<string, string> = {};
+            for (const [key, value] of params.entries()) {
+                result[key] = value;
+            }
+            done(null, result);
+        },
+    );
+
     fastify.get("/health", async () => {
         return { status: "ok" };
     });
@@ -35,6 +49,12 @@ export async function buildApp(): Promise<FastifyInstance> {
             return;
         }
         if (request.url === "/health") {
+            return;
+        }
+        if (
+            request.url.startsWith("/mcp") ||
+            request.url.startsWith("/.well-known/oauth-authorization-server")
+        ) {
             return;
         }
 
@@ -67,6 +87,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     await fastify.register(entriesRoutes, { prefix: "/entries" });
     await fastify.register(syncRoutes, { prefix: "/sync" });
+    await fastify.register(mcpRoutes);
 
     return fastify;
 }
