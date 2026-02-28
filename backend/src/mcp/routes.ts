@@ -10,10 +10,17 @@ import {
     verifyPassword,
 } from "./oauth.js";
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
     const mcpServer = createMcpServer();
-
-    const transports = new Map<string, StreamableHTTPServerTransport>();
 
     fastify.get("/.well-known/oauth-authorization-server", async () => {
         const baseUrl = process.env.MCP_BASE_URL || "http://localhost:3013";
@@ -88,11 +95,11 @@ export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
     <h1>Authorize Access</h1>
     <p>An application is requesting read-only access to your journal entries.</p>
     <form method="POST" action="/mcp/authorize">
-        <input type="hidden" name="client_id" value="${query.client_id}" />
-        <input type="hidden" name="redirect_uri" value="${query.redirect_uri}" />
-        <input type="hidden" name="code_challenge" value="${query.code_challenge}" />
-        <input type="hidden" name="code_challenge_method" value="${query.code_challenge_method || "S256"}" />
-        <input type="hidden" name="state" value="${query.state || ""}" />
+        <input type="hidden" name="client_id" value="${escapeHtml(query.client_id)}" />
+        <input type="hidden" name="redirect_uri" value="${escapeHtml(query.redirect_uri)}" />
+        <input type="hidden" name="code_challenge" value="${escapeHtml(query.code_challenge)}" />
+        <input type="hidden" name="code_challenge_method" value="${escapeHtml(query.code_challenge_method || "S256")}" />
+        <input type="hidden" name="state" value="${escapeHtml(query.state || "")}" />
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required />
         <button type="submit">Authorize</button>
@@ -119,7 +126,7 @@ export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
 <head><title>Journal - Authorization Failed</title></head>
 <body>
     <h1>Authorization Failed</h1>
-    <p>Invalid password. <a href="javascript:history.back()">Try again</a></p>
+    <p>Invalid password. Please go back and try again.</p>
 </body>
 </html>`);
         }
@@ -159,6 +166,19 @@ export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
             return reply.status(400).send({
                 error: "invalid_request",
                 error_description: "Missing required parameters",
+            });
+        }
+
+        const client = getClient(body.client_id);
+        if (!client) {
+            return reply.status(400).send({
+                error: "invalid_client",
+            });
+        }
+
+        if (body.client_secret && body.client_secret !== client.client_secret) {
+            return reply.status(400).send({
+                error: "invalid_client",
             });
         }
 

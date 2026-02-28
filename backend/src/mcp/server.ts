@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getAllFullEntries, getEntry } from "../services/storage.js";
 
+const PREVIEW_LENGTH = 200;
+
 export function createMcpServer(): McpServer {
     const server = new McpServer({
         name: "journal",
@@ -58,7 +60,7 @@ export function createMcpServer(): McpServer {
                     id: entry.id,
                     creationDate: entry.creationDate,
                     tags: entry.tags,
-                    preview: entry.content.slice(0, 200),
+                    preview: entry.content.slice(0, PREVIEW_LENGTH),
                 }));
 
             return {

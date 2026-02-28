@@ -52,8 +52,9 @@ export async function buildApp(): Promise<FastifyInstance> {
             return;
         }
         if (
-            request.url.startsWith("/mcp") ||
-            request.url.startsWith("/.well-known/oauth-authorization-server")
+            request.url === "/mcp" ||
+            request.url.startsWith("/mcp/") ||
+            request.url === "/.well-known/oauth-authorization-server"
         ) {
             return;
         }

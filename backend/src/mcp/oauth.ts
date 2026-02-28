@@ -57,7 +57,7 @@ export function exchangeCode(
 ): string | null {
     const db = getDb();
     const row = db
-        .prepare("SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used FROM oauth_codes WHERE code = ?")
+        .prepare("SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used FROM oauth_codes WHERE code = ? AND used = 0")
         .get(code) as {
             code: string;
             client_id: string;
@@ -67,9 +67,11 @@ export function exchangeCode(
             used: number;
         } | undefined;
 
-    if (!row || row.used || row.client_id !== clientId) {
+    if (!row || row.client_id !== clientId) {
         return null;
     }
+
+    db.prepare("UPDATE oauth_codes SET used = 1 WHERE code = ?").run(code);
 
     const expectedChallenge = createHash("sha256")
         .update(codeVerifier)
@@ -78,8 +80,6 @@ export function exchangeCode(
     if (expectedChallenge !== row.code_challenge) {
         return null;
     }
-
-    db.prepare("UPDATE oauth_codes SET used = 1 WHERE code = ?").run(code);
 
     const token = randomBytes(32).toString("hex");
     const tokenHash = createHash("sha256").update(token).digest("hex");

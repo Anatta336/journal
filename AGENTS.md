@@ -45,9 +45,9 @@ Assume the dev servers for both frontend and backend are already running. Only s
 
 The backend stores journal entries as Markdown files with YAML frontmatter in `data/entries/`. Deleted entries are moved to `data/entries/.trash/` for manual recovery.
 
-The backend also maintains a SQLite database at `data/journal.db` (see `backend/src/db.ts`). It stores the password hash and bearer tokens used for authentication. The `sqlite-vec` extension is loaded at startup to support future vector search.
+The backend also maintains a SQLite database at `data/journal.db` (see `backend/src/db.ts`). It stores the password hash, bearer tokens used for authentication, and OAuth client/token data for MCP access. The `sqlite-vec` extension is loaded at startup to support future vector search.
 
-**Authentication:** The backend requires the `AUTH_PASSWORD` environment variable to be set on first run (or whenever the password changes). All API endpoints except `POST /auth/login` require a valid `Authorization: Bearer <token>` header. Tokens expire after `TOKEN_EXPIRY_DAYS` days (default: `10`). See `backend/.env.example` for configuration reference. Tokens are also marked as invalid if the user chooses to logout. There is a "Invalidate all tokens" option that the user can trigger to mark every token as invalid.
+**Authentication:** The backend requires the `AUTH_PASSWORD` environment variable to be set on first run (or whenever the password changes). All API endpoints except `POST /auth/login` and MCP/OAuth endpoints require a valid `Authorization: Bearer <token>` header. Tokens expire after `TOKEN_EXPIRY_DAYS` days (default: `10`). See `backend/.env.example` for configuration reference. Tokens are also marked as invalid if the user chooses to logout. There is a "Invalidate all tokens" option that the user can trigger to mark every token as invalid.
 
 When `TESTING=true` or `NODE_ENV=test` environment variable is set, the backend uses `data-test/entries/` and `data-test/journal.db` instead for test data isolation and defaults to port `3014`. E2E tests are configured to start the backend with `TESTING=true` and `AUTH_PASSWORD=testpassword`, and the frontend on port `5174` to avoid conflicts with development servers.
 
@@ -90,3 +90,7 @@ Always used `<style scoped>`.
 ### Manual testing
 
 Prefer to use Playwright MCP when you can. When using `curl` include `-m 5` to prevent indefinitely waiting for a response.
+
+### MCP Server
+
+The backend includes an MCP (Model Context Protocol) server at `/mcp` for read-only access to journal entries. Implementation is in `backend/src/mcp/`. The server provides three tools: `list_tags`, `list_entries_by_tag`, and `get_entry`. It uses Streamable HTTP transport (stateless mode) and OAuth 2.0 with PKCE for authentication. The `MCP_BASE_URL` environment variable configures URLs in OAuth metadata (defaults to `http://localhost:3013`).
