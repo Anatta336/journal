@@ -108,7 +108,7 @@ export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
 </html>`);
     });
 
-    fastify.post("/mcp/authorize", async (request, reply) => {
+    fastify.post("/mcp/authorize", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request, reply) => {
         const body = request.body as {
             client_id: string;
             redirect_uri: string;
@@ -200,7 +200,7 @@ export const mcpRoutes: FastifyPluginAsync = async (fastify) => {
         };
     });
 
-    fastify.post("/mcp", async (request, reply) => {
+    fastify.post("/mcp", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request, reply) => {
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return reply.status(401).send({
