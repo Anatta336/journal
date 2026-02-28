@@ -18,10 +18,12 @@ fi
 echo "Node version check passed ($LOCAL_NODE)"
 
 echo "Building Frontend..."
-npm run build --prefix frontend
+npm --prefix frontend install
+npm --prefix frontend run build
 
 echo "Building Backend..."
-npm run build --prefix backend
+npm --prefix backend install
+npm --prefix backend run build
 
 echo "Deploying to $REMOTE_HOST..."
 
@@ -30,23 +32,22 @@ ssh $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_DIR/public $REMOTE_DIR/backend $
 
 # Sync Frontend
 echo "Syncing Frontend..."
-rsync -avz --delete frontend/dist/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/public/
-
-# Install backend production dependencies locally
-echo "Installing backend production dependencies..."
-npm ci --omit=dev --prefix backend
+rsync -az --delete frontend/dist/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/public/
 
 # Sync Backend
 echo "Syncing Backend..."
-rsync -avz --delete backend/dist/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/dist/
-rsync -avz --delete backend/node_modules/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/node_modules/
-rsync -avz backend/package.json $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/
+rsync -az --delete backend/dist/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/dist/
+rsync -az --delete backend/node_modules/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/node_modules/
+rsync -az backend/package.json $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/
 
 # Deploy and reload service
 echo "Deploying service file..."
-rsync -avz deployment/journal-backend.service $REMOTE_USER@$REMOTE_HOST:/etc/systemd/system/journal-backend.service
+rsync -az deployment/journal-backend.service $REMOTE_USER@$REMOTE_HOST:/etc/systemd/system/journal-backend.service
 
-echo "Restarting service..."
-ssh $REMOTE_USER@$REMOTE_HOST "systemctl daemon-reload && systemctl restart journal-backend"
+echo "Deploying nginx config..."
+rsync -az deployment/nginx-journal.conf $REMOTE_USER@$REMOTE_HOST:/etc/nginx/sites-available/notes.samdriver.xyz
+
+echo "Restarting services..."
+ssh $REMOTE_USER@$REMOTE_HOST "systemctl daemon-reload && systemctl restart journal-backend && systemctl restart nginx"
 
 echo "Deployment Complete!"
