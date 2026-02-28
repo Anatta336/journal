@@ -1,16 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-const API_BASE = `http://localhost:${process.env.VITE_BACKEND_PORT || "3014"}`;
-
-async function deleteAllEntries(): Promise<void> {
-    const response = await fetch(`${API_BASE}/entries`);
-    if (!response.ok) return;
-    const entries = await response.json();
-    if (!Array.isArray(entries)) return;
-    for (const entry of entries) {
-        await fetch(`${API_BASE}/entries/${entry.id}`, { method: "DELETE" });
-    }
-}
+import { setPageAuthToken, deleteAllEntries } from "./auth-helpers";
 
 async function clearIndexedDB(
     page: import("@playwright/test").Page,
@@ -34,6 +23,7 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Auto-save", () => {
     test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
         await deleteAllEntries();
         await page.goto("/entries");
         await clearIndexedDB(page);

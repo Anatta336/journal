@@ -1,42 +1,109 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useJournalInit } from "@/composables/useJournal";
+import { useRoute } from "vue-router";
+import { logout, logoutAll } from "@/services/auth";
 
 const { isOnline, isSyncing } = useJournalInit();
+const route = useRoute();
+
+const confirmingLogoutAll = ref(false);
+const logoutAllError = ref("");
+
+async function handleLogout(): Promise<void> {
+    await logout();
+}
+
+async function handleLogoutAll(): Promise<void> {
+    logoutAllError.value = "";
+    try {
+        await logoutAll();
+    } catch {
+        logoutAllError.value = "Could not connect to server. Please try again when online.";
+    }
+}
+
+function cancelLogoutAll(): void {
+    confirmingLogoutAll.value = false;
+    logoutAllError.value = "";
+}
 </script>
 
 <template>
     <div class="app">
-        <header class="app-header">
-            <router-link to="/entries" data-testid="back-link">
-                <h1>Journal</h1>
-            </router-link>
-            <div class="header-right">
-                <router-link
-                    to="/settings"
-                    class="settings-link"
-                    data-testid="settings-link"
-                >
-                    Settings
+        <template v-if="route.name !== 'login'">
+            <header class="app-header">
+                <router-link to="/entries" data-testid="back-link">
+                    <h1>Journal</h1>
                 </router-link>
-                <span
-                    class="sync-status"
-                    :class="{ syncing: isSyncing }"
-                    data-testid="sync-status"
-                >
-                    <template v-if="isSyncing">Syncing...</template>
-                </span>
-                <span
-                    class="connection-status"
-                    :class="{ online: isOnline, offline: !isOnline }"
-                    data-testid="connection-status"
-                >
-                    {{ isOnline ? "Online" : "Offline" }}
-                </span>
-            </div>
-        </header>
-        <main class="app-main">
+                <div class="header-right">
+                    <router-link
+                        to="/settings"
+                        class="settings-link"
+                        data-testid="settings-link"
+                    >
+                        Settings
+                    </router-link>
+                    <button
+                        class="logout-btn"
+                        data-testid="logout-btn"
+                        @click="handleLogout"
+                    >
+                        Log out
+                    </button>
+                    <template v-if="confirmingLogoutAll">
+                        <span
+                            v-if="logoutAllError"
+                            class="logout-all-error"
+                            data-testid="logout-all-error"
+                        >{{ logoutAllError }}</span>
+                        <span v-else class="confirm-text">Invalidate all tokens?</span>
+                        <button
+                            class="logout-btn danger"
+                            data-testid="logout-all-confirm-btn"
+                            @click="handleLogoutAll"
+                        >
+                            Confirm
+                        </button>
+                        <button
+                            class="logout-btn"
+                            data-testid="logout-all-cancel-btn"
+                            @click="cancelLogoutAll"
+                        >
+                            Cancel
+                        </button>
+                    </template>
+                    <button
+                        v-else
+                        class="logout-btn danger"
+                        data-testid="logout-all-btn"
+                        @click="confirmingLogoutAll = true"
+                    >
+                        Invalidate all tokens
+                    </button>
+                    <span
+                        class="sync-status"
+                        :class="{ syncing: isSyncing }"
+                        data-testid="sync-status"
+                    >
+                        <template v-if="isSyncing">Syncing...</template>
+                    </span>
+                    <span
+                        class="connection-status"
+                        :class="{ online: isOnline, offline: !isOnline }"
+                        data-testid="connection-status"
+                    >
+                        {{ isOnline ? "Online" : "Offline" }}
+                    </span>
+                </div>
+            </header>
+            <main class="app-main">
+                <router-view />
+            </main>
+        </template>
+        <template v-else>
             <router-view />
-        </main>
+        </template>
     </div>
 </template>
 
@@ -153,6 +220,38 @@ const { isOnline, isSyncing } = useJournalInit();
 
 .settings-link:hover {
     text-decoration: underline;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+}
+
+.logout-btn:hover {
+    text-decoration: underline;
+}
+
+.logout-btn.danger {
+    color: var(--color-danger);
+}
+
+.logout-btn.danger:hover {
+    color: var(--color-danger-hover);
+}
+
+.confirm-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-danger);
+}
+
+.logout-all-error {
+    font-size: var(--font-size-sm);
+    color: var(--color-warning);
 }
 
 .app-main {

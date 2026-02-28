@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { setPageAuthToken } from "./auth-helpers";
 
 test.describe("Journal Editor", () => {
+    test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
+    });
+
     test("user can type text into the editor and see it displayed", async ({
         page,
     }) => {
@@ -283,6 +288,10 @@ test.describe("Journal Editor", () => {
 });
 
 test.describe("Integration - Complete User Workflows", () => {
+    test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
+    });
+
     test("writing a journal entry with mixed formatting", async ({ page }) => {
         await page.goto("/entries/new");
 

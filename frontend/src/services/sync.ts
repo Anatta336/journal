@@ -7,6 +7,7 @@ import {
     type LocalEntry,
 } from "./db";
 import { calculateEntryHash, calculateGlobalHash } from "@/utils/hash";
+import { getToken, handleUnauthorized } from "./auth";
 
 const API_BASE = "/api";
 
@@ -61,11 +62,20 @@ async function fetchWithTimeout(
 ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const token = getToken();
+    const headers = new Headers(options.headers);
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    }
     try {
         const response = await fetch(url, {
             ...options,
+            headers,
             signal: controller.signal,
         });
+        if (response.status === 401) {
+            handleUnauthorized();
+        }
         return response;
     } finally {
         clearTimeout(timeoutId);
@@ -118,6 +128,7 @@ export async function sync(): Promise<boolean> {
     if (isSyncing) {
         return waitForSync();
     }
+    if (!getToken()) return false;
     if (!navigator.onLine) return false;
 
     notifySyncState(true);

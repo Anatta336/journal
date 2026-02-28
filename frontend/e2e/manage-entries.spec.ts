@@ -1,32 +1,9 @@
 import { test, expect } from "@playwright/test";
-
-const API_BASE = `http://localhost:${process.env.VITE_BACKEND_PORT || "3014"}`;
-
-interface EntryResponse {
-    id: string;
-    creationDate: string;
-    lastUpdated: string;
-    content: string;
-}
-
-async function createEntry(content: string): Promise<EntryResponse> {
-    const response = await fetch(`${API_BASE}/entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-    });
-    return response.json();
-}
-
-async function deleteAllEntries(): Promise<void> {
-    const response = await fetch(`${API_BASE}/entries`);
-    if (!response.ok) return;
-    const entries = await response.json();
-    if (!Array.isArray(entries)) return;
-    for (const entry of entries) {
-        await fetch(`${API_BASE}/entries/${entry.id}`, { method: "DELETE" });
-    }
-}
+import {
+    setPageAuthToken,
+    createEntry,
+    deleteAllEntries,
+} from "./auth-helpers";
 
 async function waitForSync(
     page: import("@playwright/test").Page,
@@ -61,8 +38,6 @@ test.describe.configure({ mode: "serial" });
 async function clearIndexedDB(
     page: import("@playwright/test").Page,
 ): Promise<void> {
-    // Request database deletion - it may be blocked if connections are open
-    // but the flag will be set and it will be deleted when connections close
     await page.evaluate(async () => {
         const databases = await indexedDB.databases();
         for (const db of databases) {
@@ -72,7 +47,6 @@ async function clearIndexedDB(
                     request.onsuccess = () => resolve();
                     request.onerror = () => resolve();
                     request.onblocked = () => {
-                        // Reload will close connections and complete deletion
                         resolve();
                     };
                 });
@@ -83,6 +57,7 @@ async function clearIndexedDB(
 
 test.describe("Manage Entries", () => {
     test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
         // Delete all entries from the backend first
         await deleteAllEntries();
         // Navigate to a minimal HTML page (before app loads)

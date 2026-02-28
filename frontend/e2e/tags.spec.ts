@@ -1,36 +1,10 @@
 import { test, expect } from "@playwright/test";
-
-const API_BASE = `http://localhost:${process.env.VITE_BACKEND_PORT || "3014"}`;
-
-interface EntryResponse {
-    id: string;
-    creationDate: string;
-    lastUpdated: string;
-    content: string;
-    tags?: string[];
-}
-
-async function createEntry(
-    content: string,
-    tags?: string[],
-): Promise<EntryResponse> {
-    const response = await fetch(`${API_BASE}/entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, tags }),
-    });
-    return response.json();
-}
-
-async function deleteAllEntries(): Promise<void> {
-    const response = await fetch(`${API_BASE}/entries`);
-    if (!response.ok) return;
-    const entries = await response.json();
-    if (!Array.isArray(entries)) return;
-    for (const entry of entries) {
-        await fetch(`${API_BASE}/entries/${entry.id}`, { method: "DELETE" });
-    }
-}
+import {
+    setPageAuthToken,
+    createEntry,
+    deleteAllEntries,
+    apiRequest,
+} from "./auth-helpers";
 
 async function clearIndexedDB(
     page: import("@playwright/test").Page,
@@ -54,6 +28,7 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Tags", () => {
     test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
         await deleteAllEntries();
         await page.goto("/entries");
         await clearIndexedDB(page);
@@ -245,7 +220,6 @@ test.describe("Tags", () => {
 
         test("changing only tags triggers sync to backend", async ({
             page,
-            request,
         }) => {
             const entry = await createEntry("Content stays the same", [
                 "original-tag",
@@ -281,9 +255,7 @@ test.describe("Tags", () => {
                 { timeout: 5000 },
             );
 
-            const response = await request.get(
-                `${API_BASE}/entries/${entry.id}`,
-            );
+            const response = await apiRequest(`/entries/${entry.id}`);
             const updatedEntry = await response.json();
 
             expect(updatedEntry.content.trim()).toBe("Content stays the same");

@@ -9,13 +9,21 @@ import {
 } from "vitest";
 import fs from "fs/promises";
 import path from "path";
+import { createHash } from "crypto";
 import { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
+import { initDb, getDb } from "../db.js";
 import {
     ensureStorageDirectories,
     DATA_DIR,
     TRASH_DIR,
 } from "../services/storage.js";
+
+const TEST_TOKEN = "test-bearer-token-for-entries-unit-tests";
+
+function authHeader() {
+    return { authorization: `Bearer ${TEST_TOKEN}` };
+}
 
 async function cleanupTestDirectories() {
     try {
@@ -48,6 +56,12 @@ describe("Entries API", () => {
 
     beforeAll(async () => {
         process.env.NODE_ENV = "test";
+        initDb();
+        const db = getDb();
+        const tokenHash = createHash("sha256").update(TEST_TOKEN).digest("hex");
+        db.prepare(
+            "INSERT OR IGNORE INTO tokens (hash, created_at, ip, user_agent) VALUES (?, ?, ?, ?)",
+        ).run(tokenHash, new Date().toISOString(), "127.0.0.1", "test");
         app = await buildApp();
     });
 
@@ -69,6 +83,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/entries",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -79,6 +94,7 @@ describe("Entries API", () => {
             await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: {
                     content:
                         "This is a test entry with more than thirty characters for preview",
@@ -88,6 +104,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/entries",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -103,18 +120,21 @@ describe("Entries API", () => {
             await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "First entry" },
             });
             await new Promise((r) => setTimeout(r, 10));
             await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Second entry" },
             });
 
             const response = await app.inject({
                 method: "GET",
                 url: "/entries",
+                headers: authHeader(),
             });
 
             const entries = response.json();
@@ -129,6 +149,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "My new journal entry" },
             });
 
@@ -144,6 +165,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: {},
             });
 
@@ -156,6 +178,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "" },
             });
 
@@ -168,6 +191,7 @@ describe("Entries API", () => {
             const createResponse = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Full content of the entry" },
             });
             const created = createResponse.json();
@@ -175,6 +199,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -188,6 +213,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/entries/00000000-0000-0000-0000-000000000000",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(404);
@@ -198,6 +224,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/entries/invalid-id",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(400);
@@ -209,6 +236,7 @@ describe("Entries API", () => {
             const createResponse = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Original content" },
             });
             const created = createResponse.json();
@@ -218,6 +246,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "PUT",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
                 payload: { content: "Updated content" },
             });
 
@@ -234,6 +263,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "PUT",
                 url: "/entries/00000000-0000-0000-0000-000000000000",
+                headers: authHeader(),
                 payload: { content: "Updated content" },
             });
 
@@ -244,6 +274,7 @@ describe("Entries API", () => {
             const createResponse = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Original content" },
             });
             const created = createResponse.json();
@@ -251,6 +282,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "PUT",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
                 payload: {},
             });
 
@@ -263,6 +295,7 @@ describe("Entries API", () => {
             const createResponse = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Entry to delete" },
             });
             const created = createResponse.json();
@@ -270,6 +303,7 @@ describe("Entries API", () => {
             const deleteResponse = await app.inject({
                 method: "DELETE",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
             });
 
             expect(deleteResponse.statusCode).toBe(204);
@@ -277,6 +311,7 @@ describe("Entries API", () => {
             const getResponse = await app.inject({
                 method: "GET",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
             });
 
             expect(getResponse.statusCode).toBe(404);
@@ -293,6 +328,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "DELETE",
                 url: "/entries/00000000-0000-0000-0000-000000000000",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(404);
@@ -302,6 +338,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "DELETE",
                 url: "/entries/invalid-id",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(400);
@@ -313,6 +350,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: {
                     content: "Entry with tags",
                     tags: ["work", "important"],
@@ -328,6 +366,7 @@ describe("Entries API", () => {
             const createResponse = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Original content" },
             });
             const created = createResponse.json();
@@ -335,6 +374,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "PUT",
                 url: `/entries/${created.id}`,
+                headers: authHeader(),
                 payload: { content: "Updated content", tags: ["new-tag"] },
             });
 
@@ -347,6 +387,7 @@ describe("Entries API", () => {
             await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: {
                     content: "Entry with tags",
                     tags: ["work", "journal"],
@@ -356,6 +397,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/entries",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -367,6 +409,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Content", tags: ["invalid tag!"] },
             });
 
@@ -377,6 +420,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: {
                     content: "Content",
                     tags: ["this-tag-is-way-too-long-for-us"],
@@ -390,6 +434,7 @@ describe("Entries API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/entries",
+                headers: authHeader(),
                 payload: { content: "Content", tags: ["valid-Tag-123"] },
             });
 

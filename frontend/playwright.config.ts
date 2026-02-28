@@ -19,7 +19,8 @@ export default defineConfig({
     ],
     webServer: [
         {
-            command: "TESTING=true npm run dev --prefix ../backend",
+            command:
+                "TESTING=true AUTH_PASSWORD=testpassword npm run dev --prefix ../backend",
             url: "http://localhost:3014/health",
             reuseExistingServer: !process.env.CI,
         },

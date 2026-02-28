@@ -6,3 +6,9 @@ dist
 frontend/test-results/
 frontend/coverage/
 backend/coverage/
+data/journal.db
+data/journal.db-shm
+data/journal.db-wal
+data-test/journal.db
+data-test/journal.db-shm
+data-test/journal.db-wal

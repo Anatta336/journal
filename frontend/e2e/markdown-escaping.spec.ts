@@ -1,29 +1,10 @@
 import { test, expect } from "@playwright/test";
-
-const API_BASE = `http://localhost:${process.env.VITE_BACKEND_PORT || "3014"}`;
-
-async function createEntry(content: string): Promise<{ id: string }> {
-    const response = await fetch(`${API_BASE}/entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-    });
-    return response.json();
-}
-
-async function deleteEntry(id: string): Promise<void> {
-    await fetch(`${API_BASE}/entries/${id}`, { method: "DELETE" });
-}
-
-async function deleteAllEntries(): Promise<void> {
-    const response = await fetch(`${API_BASE}/entries`);
-    if (!response.ok) return;
-    const entries = await response.json();
-    if (!Array.isArray(entries)) return;
-    for (const entry of entries) {
-        await fetch(`${API_BASE}/entries/${entry.id}`, { method: "DELETE" });
-    }
-}
+import {
+    setPageAuthToken,
+    createEntry,
+    deleteEntry,
+    deleteAllEntries,
+} from "./auth-helpers";
 
 async function clearIndexedDB(
     page: import("@playwright/test").Page,
@@ -45,6 +26,7 @@ async function clearIndexedDB(
 
 test.describe("Markdown Escaping", () => {
     test.beforeEach(async ({ page }) => {
+        await setPageAuthToken(page);
         // Delete all entries from backend first
         await deleteAllEntries();
         // Navigate to a page to clear IndexedDB

@@ -9,14 +9,22 @@ import {
 } from "vitest";
 import fs from "fs/promises";
 import path from "path";
+import { createHash } from "crypto";
 import { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
+import { initDb, getDb } from "../db.js";
 import {
     ensureStorageDirectories,
     saveEntry,
     DATA_DIR,
     TRASH_DIR,
 } from "../services/storage.js";
+
+const TEST_TOKEN = "test-bearer-token-for-sync-unit-tests";
+
+function authHeader() {
+    return { authorization: `Bearer ${TEST_TOKEN}` };
+}
 
 async function cleanupTestDirectories() {
     try {
@@ -49,6 +57,12 @@ describe("Sync API", () => {
 
     beforeAll(async () => {
         process.env.NODE_ENV = "test";
+        initDb();
+        const db = getDb();
+        const tokenHash = createHash("sha256").update(TEST_TOKEN).digest("hex");
+        db.prepare(
+            "INSERT OR IGNORE INTO tokens (hash, created_at, ip, user_agent) VALUES (?, ?, ?, ?)",
+        ).run(tokenHash, new Date().toISOString(), "127.0.0.1", "test");
         app = await buildApp();
     });
 
@@ -70,6 +84,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/status",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -90,10 +105,12 @@ describe("Sync API", () => {
             const response1 = await app.inject({
                 method: "GET",
                 url: "/sync/status",
+                headers: authHeader(),
             });
             const response2 = await app.inject({
                 method: "GET",
                 url: "/sync/status",
+                headers: authHeader(),
             });
 
             expect(response1.json().globalHash).toBe(
@@ -107,6 +124,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/manifest",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -125,6 +143,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/manifest",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -151,6 +170,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/entries/33333333-3333-3333-3333-333333333333",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(200);
@@ -163,6 +183,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/entries/00000000-0000-0000-0000-000000000000",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(404);
@@ -172,6 +193,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "GET",
                 url: "/sync/entries/invalid-id",
+                headers: authHeader(),
             });
 
             expect(response.statusCode).toBe(400);
@@ -183,6 +205,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/sync/batch",
+                headers: authHeader(),
                 payload: {
                     updates: [
                         {
@@ -205,6 +228,7 @@ describe("Sync API", () => {
             const getResponse = await app.inject({
                 method: "GET",
                 url: "/sync/entries/44444444-4444-4444-4444-444444444444",
+                headers: authHeader(),
             });
             expect(getResponse.statusCode).toBe(200);
             expect(getResponse.json().content).toBe("New entry");
@@ -222,6 +246,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/sync/batch",
+                headers: authHeader(),
                 payload: {
                     updates: [
                         {
@@ -240,6 +265,7 @@ describe("Sync API", () => {
             const getResponse = await app.inject({
                 method: "GET",
                 url: "/sync/entries/55555555-5555-5555-5555-555555555555",
+                headers: authHeader(),
             });
             expect(getResponse.json().content).toBe("Updated");
             expect(getResponse.json().hash).toBe("updated-hash");
@@ -257,6 +283,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/sync/batch",
+                headers: authHeader(),
                 payload: {
                     deletions: ["66666666-6666-6666-6666-666666666666"],
                 },
@@ -271,6 +298,7 @@ describe("Sync API", () => {
             const getResponse = await app.inject({
                 method: "GET",
                 url: "/sync/entries/66666666-6666-6666-6666-666666666666",
+                headers: authHeader(),
             });
             expect(getResponse.statusCode).toBe(404);
 
@@ -293,6 +321,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/sync/batch",
+                headers: authHeader(),
                 payload: {
                     updates: [
                         {
@@ -318,6 +347,7 @@ describe("Sync API", () => {
             const response = await app.inject({
                 method: "POST",
                 url: "/sync/batch",
+                headers: authHeader(),
                 payload: {
                     updates: [
                         {
