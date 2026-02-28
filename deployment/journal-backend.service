@@ -6,9 +6,10 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/var/www/journal/backend
-ExecStart=/usr/bin/node dist/index.js
+ExecStart=/home/sam/.nvm/versions/node/v22.20.0/bin/node dist/index.js
 Restart=on-failure
 Environment=NODE_ENV=production
+EnvironmentFile=/var/www/journal/.env
 
 [Install]
 WantedBy=multi-user.target
