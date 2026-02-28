@@ -46,7 +46,10 @@ rsync -avz backend/package.json $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/backend/
 echo "Deploying service file..."
 rsync -avz deployment/journal-backend.service $REMOTE_USER@$REMOTE_HOST:/etc/systemd/system/journal-backend.service
 
-echo "Restarting service..."
-ssh $REMOTE_USER@$REMOTE_HOST "systemctl daemon-reload && systemctl restart journal-backend"
+echo "Deploying nginx config..."
+rsync -avz deployment/nginx-journal.conf $REMOTE_USER@$REMOTE_HOST:/etc/nginx/sites-available/notes.samdriver.xyz
+
+echo "Restarting services..."
+ssh $REMOTE_USER@$REMOTE_HOST "systemctl daemon-reload && systemctl restart journal-backend && systemctl restart nginx"
 
 echo "Deployment Complete!"
